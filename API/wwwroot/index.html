@@ -24,27 +24,88 @@
       <a href="admin.html" class="text-sm text-gray-500 hover:text-indigo-600 ml-2">Admin</a>
     </div>
 
-    <!-- Filters -->
-    <div class="max-w-5xl mx-auto px-4 pb-3 flex flex-wrap gap-3 items-center">
-      <select x-model="filterYear" @change="search()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-        <option value="">All Years</option>
-        <template x-for="y in years" :key="y">
-          <option :value="y" x-text="y"></option>
-        </template>
-      </select>
-
-      <input type="text" x-model="filterAuthor" @keyup.enter="search()" @input.debounce.400ms="search()"
-        placeholder="Filter by author…"
-        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-44" />
-
-      <input type="text" x-model="filterKeyword" @keyup.enter="search()" @input.debounce.400ms="search()"
-        placeholder="Filter by keyword…"
-        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-44" />
-
-      <button @click="clearFilters()" class="text-sm text-gray-400 hover:text-red-500 underline ml-1">Clear All</button>
-
+    <!-- Filters toggle row -->
+    <div class="max-w-5xl mx-auto px-4 pb-2 flex items-center gap-3">
+      <button @click="filtersOpen = !filtersOpen"
+        class="flex items-center gap-1.5 text-sm border rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+        :class="activeFilterCount > 0 ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-gray-300 text-gray-600'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+        </svg>
+        Filters
+        <span x-show="activeFilterCount > 0"
+          class="bg-indigo-600 text-white text-xs rounded-full px-1.5 leading-5"
+          x-text="activeFilterCount"></span>
+      </button>
+      <button x-show="activeFilterCount > 0" @click="clearFilters()"
+        class="text-sm text-gray-400 hover:text-red-500 underline">Clear All</button>
       <span class="ml-auto text-xs text-gray-400" x-show="!isSearchMode" x-text="'Showing ' + total + ' publications'"></span>
       <span class="ml-auto text-xs text-gray-400" x-show="isSearchMode" x-text="results.length + ' results for &quot;' + lastQuery + '&quot;'"></span>
+    </div>
+
+    <!-- Collapsible filter panel -->
+    <div x-show="filtersOpen" x-transition class="max-w-5xl mx-auto px-4 pb-4">
+      <div class="border border-gray-200 rounded-xl bg-white p-5 flex flex-wrap gap-8">
+
+        <!-- Year Range -->
+        <div class="flex flex-col gap-1.5">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Year Range</span>
+          <div class="flex items-center gap-2">
+            <input type="number" x-model="filterYearFrom"
+              @input.debounce.400ms="applyFilters()"
+              placeholder="From"
+              class="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            <span class="text-gray-400">–</span>
+            <input type="number" x-model="filterYearTo"
+              @input.debounce.400ms="applyFilters()"
+              placeholder="To"
+              class="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+
+        <!-- Keywords -->
+        <div class="flex flex-col gap-1.5 min-w-[190px]">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Keywords
+            <span x-show="selectedKeywords.length > 0" class="normal-case font-normal text-indigo-600"
+              x-text="'(' + selectedKeywords.length + ' selected)'"></span>
+          </span>
+          <input type="text" x-model="keywordSearch" placeholder="Search keywords…"
+            class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
+            <template x-for="kw in filteredKeywords" :key="kw">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
+                <input type="checkbox" :value="kw" x-model="selectedKeywords"
+                  @change="applyFilters()" class="accent-indigo-600 shrink-0" />
+                <span x-text="kw" class="truncate"></span>
+              </label>
+            </template>
+            <p x-show="filteredKeywords.length === 0" class="text-xs text-gray-400 px-1 py-1">No keywords found.</p>
+          </div>
+        </div>
+
+        <!-- Authors -->
+        <div class="flex flex-col gap-1.5 min-w-[190px]">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Authors
+            <span x-show="selectedAuthors.length > 0" class="normal-case font-normal text-indigo-600"
+              x-text="'(' + selectedAuthors.length + ' selected)'"></span>
+          </span>
+          <input type="text" x-model="authorSearch" placeholder="Search authors…"
+            class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
+            <template x-for="author in filteredAuthors" :key="author">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
+                <input type="checkbox" :value="author" x-model="selectedAuthors"
+                  @change="applyFilters()" class="accent-indigo-600 shrink-0" />
+                <span x-text="author" class="truncate"></span>
+              </label>
+            </template>
+            <p x-show="filteredAuthors.length === 0" class="text-xs text-gray-400 px-1 py-1">No authors found.</p>
+          </div>
+        </div>
+
+      </div>
     </div>
   </header>
 
@@ -114,9 +175,15 @@
     function searchApp() {
       return {
         query: '',
-        filterYear: '',
-        filterAuthor: '',
-        filterKeyword: '',
+        filterYearFrom: '',
+        filterYearTo: '',
+        selectedAuthors: [],
+        selectedKeywords: [],
+        availableAuthors: [],
+        availableKeywords: [],
+        authorSearch: '',
+        keywordSearch: '',
+        filtersOpen: false,
         results: [],
         total: 0,
         page: 1,
@@ -124,31 +191,61 @@
         loading: false,
         isSearchMode: false,
         lastQuery: '',
-        years: [],
 
         get totalPages() {
           return Math.max(1, Math.ceil(this.total / this.pageSize));
         },
 
-        async init() {
-          await this.loadYears();
-          await this.loadAll();
+        get activeFilterCount() {
+          let n = 0;
+          if (this.filterYearFrom) n++;
+          if (this.filterYearTo)   n++;
+          n += this.selectedAuthors.length;
+          n += this.selectedKeywords.length;
+          return n;
         },
 
-        async loadYears() {
+        get filteredAuthors() {
+          if (!this.authorSearch) return this.availableAuthors;
+          const q = this.authorSearch.toLowerCase();
+          return this.availableAuthors.filter(a => a.toLowerCase().includes(q));
+        },
+
+        get filteredKeywords() {
+          if (!this.keywordSearch) return this.availableKeywords;
+          const q = this.keywordSearch.toLowerCase();
+          return this.availableKeywords.filter(k => k.toLowerCase().includes(q));
+        },
+
+        async init() {
+          await Promise.all([this.loadFacets(), this.loadAll()]);
+        },
+
+        async loadFacets() {
           try {
-            const res = await fetch('/api/publications?page=1&pageSize=1000');
-            const data = await res.json();
-            const ys = [...new Set((data.items || []).map(p => p.year).filter(Boolean))].sort((a,b) => b - a);
-            this.years = ys;
+            const [authorsRes, keywordsRes] = await Promise.all([
+              fetch('/api/publications/authors'),
+              fetch('/api/publications/keywords')
+            ]);
+            this.availableAuthors  = await authorsRes.json();
+            this.availableKeywords = await keywordsRes.json();
           } catch {}
+        },
+
+        buildFilterParams(params) {
+          if (this.filterYearFrom) params.append('yearFrom', this.filterYearFrom);
+          if (this.filterYearTo)   params.append('yearTo',   this.filterYearTo);
+          this.selectedAuthors.forEach(a  => params.append('authors',  a));
+          this.selectedKeywords.forEach(k => params.append('keywords', k));
         },
 
         async loadAll() {
           this.loading = true;
           this.isSearchMode = false;
           try {
-            const res = await fetch(`/api/publications?page=${this.page}&pageSize=${this.pageSize}`);
+            const params = new URLSearchParams({ page: this.page, pageSize: this.pageSize });
+            this.buildFilterParams(params);
+            const res  = await fetch('/api/publications?' + params);
             const data = await res.json();
             this.results = data.items || [];
             this.total   = data.total ?? 0;
@@ -160,23 +257,22 @@
         },
 
         onQueryInput() {
+          this.page = 1;
           if (!this.query.trim()) {
-            this.clearFilters();
+            this.loadAll();
           } else {
             this.search();
           }
         },
 
         async search() {
-          if (!this.query.trim()) { await this.loadAll(); return; }
+          if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
           this.loading = true;
           this.isSearchMode = true;
           this.lastQuery = this.query;
           try {
             const params = new URLSearchParams({ q: this.query });
-            if (this.filterYear)    params.append('year',    this.filterYear);
-            if (this.filterAuthor)  params.append('author',  this.filterAuthor);
-            if (this.filterKeyword) params.append('keyword', this.filterKeyword);
+            this.buildFilterParams(params);
             const res = await fetch('/api/search?' + params);
             this.results = await res.json();
           } catch (e) {
@@ -186,11 +282,23 @@
           }
         },
 
+        applyFilters() {
+          this.page = 1;
+          if (this.query.trim()) {
+            this.search();
+          } else {
+            this.loadAll();
+          }
+        },
+
         async clearFilters() {
-          this.query = '';
-          this.filterYear = '';
-          this.filterAuthor = '';
-          this.filterKeyword = '';
+          this.query          = '';
+          this.filterYearFrom = '';
+          this.filterYearTo   = '';
+          this.selectedAuthors  = [];
+          this.selectedKeywords = [];
+          this.authorSearch   = '';
+          this.keywordSearch  = '';
           this.page = 1;
           await this.loadAll();
         },

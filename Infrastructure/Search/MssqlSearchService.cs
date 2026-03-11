@@ -17,10 +17,11 @@ public class MssqlSearchService(DapperContext context) : ISearchService
             StoredProcedures.SearchPublications,
             new
             {
-                Query   = query,
-                Year    = filters.Year,
-                Author  = filters.Author,
-                Keyword = filters.Keyword
+                Query    = query,
+                YearFrom = filters.YearFrom,
+                YearTo   = filters.YearTo,
+                Authors  = filters.Authors is { Count: > 0 } ? string.Join(",", filters.Authors) : null,
+                Keywords = filters.Keywords is { Count: > 0 } ? string.Join(",", filters.Keywords) : null
             },
             commandType: CommandType.StoredProcedure);
 

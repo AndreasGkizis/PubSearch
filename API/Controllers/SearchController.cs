@@ -10,15 +10,16 @@ public class SearchController(ISearchService searchService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Search(
-        [FromQuery] string? q,
-        [FromQuery] int?    year,
-        [FromQuery] string? author,
-        [FromQuery] string? keyword)
+        [FromQuery] string?   q,
+        [FromQuery] int?      yearFrom,
+        [FromQuery] int?      yearTo,
+        [FromQuery] string[]? authors,
+        [FromQuery] string[]? keywords)
     {
         if (string.IsNullOrWhiteSpace(q))
             return BadRequest(new { error = "Query parameter 'q' is required." });
 
-        var filters = new SearchFilters(year, author, keyword);
+        var filters = new SearchFilters(yearFrom, yearTo, authors, keywords);
         var results = await searchService.SearchAsync(q, filters);
         return Ok(results);
     }

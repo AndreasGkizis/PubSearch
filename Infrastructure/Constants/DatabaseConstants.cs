@@ -8,6 +8,8 @@ public static class StoredProcedures
     public const string UpdatePublication   = "sp_UpdatePublication";
     public const string DeletePublication   = "sp_DeletePublication";
     public const string SearchPublications  = "sp_SearchPublications";
+    public const string GetAllAuthors       = "sp_GetAllAuthors";
+    public const string GetAllKeywords      = "sp_GetAllKeywords";
 }
 
 public static class TableTypes

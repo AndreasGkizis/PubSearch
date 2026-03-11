@@ -3,141 +3,31 @@ GO
 
 -- ── Authors ───────────────────────────────────────────────────────────────
 INSERT INTO Authors (FullName, Email) VALUES
-    ('Yann LeCun',            'lecun@fb.com'),
-    ('Geoffrey Hinton',       'hinton@google.com'),
-    ('Yoshua Bengio',         'bengio@mila.ca'),
-    ('Andrej Karpathy',       'karpathy@openai.com'),
-    ('Fei-Fei Li',            'feifeili@stanford.edu'),
-    ('Ian Goodfellow',        'goodfellow@apple.com'),
-    ('Demis Hassabis',        'demis@deepmind.com'),
-    ('Ilya Sutskever',        'ilyasu@openai.com'),
-    ('Pieter Abbeel',         'abbeel@berkeley.edu'),
-    ('Chelsea Finn',          'cfinn@stanford.edu');
+    ('Juliet Ramsay', 'julietdmramsay@hotmail.com'),
+    ('Feng Han',      'franhanf@gmail.com');
 GO
 
--- ── Publications (5 with PdfFileName, 5 without) ─────────────────────────
+-- ── Publications ─────────────────────────────────────────────────────────
 INSERT INTO Publications (Title, Abstract, Body, Keywords, Year, DOI, CitationCount, PdfFileName) VALUES
 (
-    'Deep Residual Learning for Image Recognition',
-    'We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions.',
-    'Deep neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs. We provide comprehensive empirical evidence showing that these residual networks are easier to optimize, and can gain accuracy from considerably increased depth.',
-    'deep learning, residual networks, image recognition, CNN',
-    2016,
-    '10.1109/CVPR.2016.90',
-    120000,
-    'paper-01.pdf'
-),
-(
-    'Attention Is All You Need',
-    'The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.',
-    'Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation. We propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output.',
-    'transformer, attention mechanism, NLP, sequence transduction',
-    2017,
-    '10.48550/arXiv.1706.03762',
-    95000,
-    'paper-02.pdf'
-),
-(
-    'Generative Adversarial Networks',
-    'We propose a new framework for estimating generative models via an adversarial process, in which we simultaneously train two models: a generative model G that captures the data distribution, and a discriminative model D that estimates the probability that a sample came from the training data rather than G.',
-    'Adversarial nets have several advantages and disadvantages relative to other modeling frameworks. The advantages are primarily that Markov chains are never needed, only backpropagation is used to obtain gradients, no inference is needed during learning, and a wide variety of functions can be incorporated into the model.',
-    'GAN, generative models, adversarial training, deep learning',
-    2014,
-    '10.48550/arXiv.1406.2661',
-    70000,
-    'paper-03.pdf'
-),
-(
-    'BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding',
-    'We introduce BERT, a new language representation model designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers.',
-    'Unlike recent language representation models, BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers. As a result, the pre-trained BERT model can be fine-tuned with just one additional output layer to create state-of-the-art models for a wide range of tasks.',
-    'BERT, NLP, pre-training, language model, transformers',
-    2019,
-    '10.48550/arXiv.1810.04805',
-    85000,
-    'paper-04.pdf'
-),
-(
-    'Playing Atari with Deep Reinforcement Learning',
-    'We present the first deep learning model to successfully learn control policies directly from high-dimensional sensory input using reinforcement learning. The model is a convolutional neural network trained with a variant of Q-learning.',
-    'We present the first deep learning model to successfully learn control policies directly from high-dimensional sensory input using reinforcement learning. The model is a convolutional neural network, trained with a variant of Q-learning, whose input is raw pixels and whose output is a value function estimating future rewards.',
-    'reinforcement learning, deep Q-network, DQN, Atari, game playing',
-    2013,
-    '10.48550/arXiv.1312.5602',
-    30000,
-    'paper-05.pdf'
-),
-(
-    'ImageNet Large Scale Visual Recognition Challenge',
-    'The ImageNet Large Scale Visual Recognition Challenge (ILSVRC) is a benchmark in object category classification and detection on hundreds of object categories and millions of images.',
-    'We describe the ImageNet Large Scale Visual Recognition Challenge (ILSVRC), a benchmark in object category classification and detection on hundreds of object categories and millions of images. The challenge has been run annually from 2010 to present, attracting participation from more than fifty institutions.',
-    'ImageNet, object detection, image classification, benchmark',
-    2015,
-    '10.1007/s11263-015-0816-y',
-    50000,
-    NULL
-),
-(
-    'Dropout: A Simple Way to Prevent Neural Networks from Overfitting',
-    'Deep neural nets with a large number of parameters are very powerful machine learning systems. However, overfitting is a serious problem in such networks. Dropout is a technique that addresses this problem.',
-    'With unlimited computation, the best way to regularize a fixed-sized model is to average the predictions of all possible settings of the parameters, weighting each setting by its posterior probability given the training data. Dropout is a technique where, during training, some neurons are randomly set to zero. This prevents overfitting.',
-    'dropout, regularization, neural networks, overfitting',
-    2014,
-    '10.5555/2627435.2670313',
-    42000,
-    NULL
-),
-(
-    'Adam: A Method for Stochastic Optimization',
-    'We introduce Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments.',
-    'Adam is computationally efficient, has little memory requirement, is invariant to diagonal rescaling of gradients, and is well suited for problems that are large in terms of data and/or parameters. The method is also appropriate for non-stationary objectives and problems with very noisy and/or sparse gradients.',
-    'optimization, Adam, gradient descent, stochastic optimization, deep learning',
-    2015,
-    '10.48550/arXiv.1412.6980',
-    60000,
-    NULL
-),
-(
-    'Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks',
-    'We propose an algorithm for meta-learning that is model-agnostic, in the sense that it is compatible with any model trained with gradient descent and applicable to a variety of different learning problems.',
-    'The goal of meta-learning is to train a model on a variety of learning tasks, such that it can solve new learning tasks using only a small number of training samples. Our approach trains the model''s initial parameters such that the model has maximal performance on a new task after the parameters have been updated through one or more gradient steps computed with a small amount of data from that new task.',
-    'meta-learning, MAML, few-shot learning, gradient descent',
-    2017,
-    '10.48550/arXiv.1703.03400',
-    18000,
-    NULL
-),
-(
-    'Neural Architecture Search with Reinforcement Learning',
-    'Neural network architectures are typically designed by human experts. In this paper, we use a recurrent network to generate the model descriptions of neural networks and train this recurrent network with reinforcement learning to maximize the expected accuracy of the generated architectures on a validation set.',
-    'Our method, starting from scratch, can design a novel network architecture that rivals the best human-invented architecture in terms of test set accuracy. When searching for convolutional architectures, our method, starting from scratch, can design a novel architecture that achieves a test error rate of 3.65 on CIFAR-10.',
-    'neural architecture search, NAS, reinforcement learning, AutoML',
-    2017,
-    '10.48550/arXiv.1611.01578',
-    12000,
-    NULL
+    'Space is Not Nothing: Heritage Aesthetics and the Struggle for Space',
+    'The paper explores government encouraged industrial developments in the name of climate change mitigation and the impacts on the aesthetic and social values of rural cultural landscapes and rural lifestyles. The squandering of space and the disruption of spatial scale is also considered and discussed with regard to cultural landscapes. Examples of urban and rural landscapes are presented with an analysis of the effectiveness of heritage listings and the at times unjust and arduous plight forced on rural communities by development impacts.',
+    'Space is an essential element in reading cultural landscapes, be it a part of the smallest garden or the largest designed landscape or the intimacy and expanses of countryside and nature. Aristotle described space as the container of all objects while Isaac Newton proposed the notion of ''absolute space'' -- that space is an entity that frames and contains all material objects. Space can be unlimited, infinite, indefinite or subtly defined. Space is where we accumulate our intimate experience through time and where place is created through myths, legends and emotional attachment to land. Space also presents the visibility of the creation of space through which we appreciate the aesthetics of structures or landforms or sounds. Space therefore gives us the dimension to read, understand and enjoy a place. Space and aesthetics are indivisible. Colors, size, lines, patterns ethereal and ephemeral moments in space give rise to our metaphysical imagination. Space can be physical, social and symbolic and along with aesthetics is a significant element of landscapes.
+The Xi''an Declaration on the Conservation of the Setting of Heritage Structures, Sites and Areas (2005) initiated wider recognition of the importance of the spatial settings of World Heritage Places. Apart from the value of space as a setting there is the value of space as a backdrop -- the ability to recall the attached emotions and collective memories through history by experiencing and appreciating the silhouettes of hills rolling across a landscape, patterns of hills of different hues, the rugged form of mountain ranges and the skylines of cities.
+West Lake, Hangzhou, inscribed in the World Heritage List in 2011 with a history of 2,100 years, is known as ''the Heaven on Earth'' in China. It is a national cultural icon and a representative of a living cultural landscape underpinned by Chinese philosophy and aesthetics on the relationship between human beings and nature. West Lake is a miraculous space with multiple layers of meanings. Hills embrace the lake on three sides; the city proper lies to the east. The West Lake appears natural with cultural construction harmoniously decorated around it. However, this intoxicating ''natural'' landscape is not natural; rather, it is culturally constructed according to Chinese philosophical and landscape aesthetic principles. West Lake was an open social space where emperors, scholars, citizens, officials, the successful, the failures and the religious were gathering. It was a collective work by multiple social groups. Today, West Lake is successfully evolving and travelling there is still something that one must do in a lifetime as a Chinese person.
+Canberra, Australia''s national capital, famously manifests a city design by the American architect and landscape architect Walter Burley Griffin. The key components of the plan were the land and water axes that connect local mountains and hills with a central city lake while a triangular geometric pattern bisected by the axes sets the framework for the national capital. The vista is the captured axial view that engages the eye, sweeps down from Parliament House, fans out at the lake and then sweeps up at the grassed terraces to terminate in the forested conical Mount Ainslie. Lake Burley Griffin is the other critical spatial element, created by damming a small river, creating a water system flowing through the centre of the city. The critical ''loose space'' of the grassed terraces is used by the community for recreation events, cultural events and celebrations, and is now under threat from proposed large stone war memorials that will impact the space and be eye stoppers in the vista.
+The exploitation of rural land spaces is happening not just in China and Australia but everywhere. Key issues are urbanization, abandoned land, suburban expansion, glass housing of market gardens, industrial scale mono-crop farming, plantations, sourcing of wind power, minerals and natural gas. China''s rural landscape was a traditional aesthetic objective but today is especially under threat of rapid urbanization, with more than 13 million farmers leaving their land and moving into cities every year. Wind turbines, now over 100m high, tower over fields and farms and stand atop ridges, appropriating the valued space of rural setting landscapes. Community actions against wind-farm installations are unfairly labelled as the ''nimby'' (not in my backyard) without appreciating that communities have heart-felt love of their landscape for a multitude of aesthetic and emotional reasons.
+Heritage practitioners need to describe the aesthetic quality of spaciousness: the colours and textures of the space; the character of how the space is delineated such as features that edge the space; terminal features of a space; the base plane or planes; how water works in a space; the aesthetic evocations of a space; views in, views out, major viewpoints; sounds of the space -- natural sounds, discordant sounds, quietness; and how people and wildlife use the space. Apart from describing a space thoroughly, another effective measure is to interpret the space in an engaging way so that its spectrum of values is understood and appreciated.
+Spaces as components of cultural heritage places contribute to cultural capital. Heritage spaces are part of a cultural system and failure to recognise the essential visual and non-visual qualities as well as conserve and manage such places could put a precinct or area in peril and cause loss of community well-being, a loss of associational value, as well as loss of economic output. Space, particularly urban space, is precious and highly sought after by developers, and now rural space is also targeted. Heritage landscape spaces will frequently be contested. Space is a non-renewable resource. Spaces are the settings for the existence of life. Space is not nothing.',
+    'heritage aesthetics, cultural landscapes, space, rural landscapes, West Lake, Hangzhou, Canberra, heritage listing, spatial values, cultural capital',
+    2011,
+    NULL,
+    15,
+    'I-2-Article4_Ramsay_Han.pdf'
 );
 GO
 
 -- ── Publication–Author links ──────────────────────────────────────────────
--- Publication 1: LeCun, Hinton
+-- Publication 1: Ramsay, Han
 INSERT INTO PublicationAuthors VALUES (1, 1), (1, 2);
--- Publication 2: Sutskever, Hinton
-INSERT INTO PublicationAuthors VALUES (2, 8), (2, 2);
--- Publication 3: Goodfellow, Bengio
-INSERT INTO PublicationAuthors VALUES (3, 6), (3, 3);
--- Publication 4: Bengio, Hinton
-INSERT INTO PublicationAuthors VALUES (4, 3), (4, 2);
--- Publication 5: Sutskever, Hassabis
-INSERT INTO PublicationAuthors VALUES (5, 8), (5, 7);
--- Publication 6: Fei-Fei Li, Karpathy
-INSERT INTO PublicationAuthors VALUES (6, 5), (6, 4);
--- Publication 7: Hinton
-INSERT INTO PublicationAuthors VALUES (7, 2);
--- Publication 8: Bengio
-INSERT INTO PublicationAuthors VALUES (8, 3);
--- Publication 9: Finn, Abbeel
-INSERT INTO PublicationAuthors VALUES (9, 10), (9, 9);
--- Publication 10: Sutskever
-INSERT INTO PublicationAuthors VALUES (10, 8);
 GO

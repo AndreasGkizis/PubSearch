@@ -13,14 +13,40 @@ public class PublicationsController(PublicationService publicationService, IFile
     // GET /api/publications?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] int page     = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int      page     = 1,
+        [FromQuery] int      pageSize = 20,
+        [FromQuery] int?     yearFrom = null,
+        [FromQuery] int?     yearTo   = null,
+        [FromQuery] string[]? authors  = null,
+        [FromQuery] string[]? keywords = null)
     {
         if (page < 1)    page     = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-        var (items, total) = await publicationService.GetSummariesAsync(page, pageSize);
+        var hasFilters = yearFrom.HasValue || yearTo.HasValue
+            || (authors?.Length > 0) || (keywords?.Length > 0);
+        var filters = hasFilters
+            ? new SearchFilters(yearFrom, yearTo, authors, keywords)
+            : null;
+
+        var (items, total) = await publicationService.GetSummariesAsync(page, pageSize, filters);
         return Ok(new { items, total, page, pageSize });
+    }
+
+    // GET /api/publications/authors
+    [HttpGet("authors")]
+    public async Task<IActionResult> GetAuthors()
+    {
+        var authors = await publicationService.GetAllAuthorsAsync();
+        return Ok(authors);
+    }
+
+    // GET /api/publications/keywords
+    [HttpGet("keywords")]
+    public async Task<IActionResult> GetKeywords()
+    {
+        var keywords = await publicationService.GetAllKeywordsAsync();
+        return Ok(keywords);
     }
 
     // GET /api/publications/{id}

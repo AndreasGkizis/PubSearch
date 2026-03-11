@@ -6,9 +6,13 @@ namespace ResearchPublications.Application.Services;
 
 public class PublicationService(IPublicationRepository repository)
 {
-    public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(int page, int pageSize)
+    public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(
+        int page, int pageSize, SearchFilters? filters = null)
     {
-        var (items, total) = await repository.GetAllAsync(page, pageSize);
+        var (items, total) = await repository.GetAllAsync(
+            page, pageSize,
+            filters?.YearFrom, filters?.YearTo,
+            filters?.Authors, filters?.Keywords);
         return (items.Select(ToSummary), total);
     }
 
@@ -40,6 +44,9 @@ public class PublicationService(IPublicationRepository repository)
             ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
         await repository.DeleteAsync(id);
     }
+
+    public Task<IEnumerable<string>> GetAllAuthorsAsync()  => repository.GetAllAuthorsAsync();
+    public Task<IEnumerable<string>> GetAllKeywordsAsync() => repository.GetAllKeywordsAsync();
 
     // ── Mapping helpers ────────────────────────────────────────────────────
 

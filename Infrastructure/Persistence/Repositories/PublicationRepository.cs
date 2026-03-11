@@ -26,12 +26,24 @@ public class PublicationRepository(DapperContext context) : IPublicationReposito
         return pub;
     }
 
-    public async Task<(IEnumerable<Publication> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<Publication> Items, int TotalCount)> GetAllAsync(
+        int page, int pageSize,
+        int? yearFrom = null, int? yearTo = null,
+        IReadOnlyList<string>? authors = null,
+        IReadOnlyList<string>? keywords = null)
     {
         using var conn = context.CreateConnection();
         using var multi = await conn.QueryMultipleAsync(
             StoredProcedures.GetAllPublications,
-            new { Page = page, PageSize = pageSize },
+            new
+            {
+                Page     = page,
+                PageSize = pageSize,
+                YearFrom = yearFrom,
+                YearTo   = yearTo,
+                Authors  = SerializeList(authors),
+                Keywords = SerializeList(keywords)
+            },
             commandType: CommandType.StoredProcedure);
 
         var totalCount = await multi.ReadFirstAsync<int>();
@@ -118,7 +130,26 @@ public class PublicationRepository(DapperContext context) : IPublicationReposito
             commandType: CommandType.StoredProcedure);
     }
 
+    public async Task<IEnumerable<string>> GetAllAuthorsAsync()
+    {
+        using var conn = context.CreateConnection();
+        return await conn.QueryAsync<string>(
+            StoredProcedures.GetAllAuthors,
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task<IEnumerable<string>> GetAllKeywordsAsync()
+    {
+        using var conn = context.CreateConnection();
+        return await conn.QueryAsync<string>(
+            StoredProcedures.GetAllKeywords,
+            commandType: CommandType.StoredProcedure);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
+
+    private static string? SerializeList(IReadOnlyList<string>? values) =>
+        values is { Count: > 0 } ? string.Join(",", values) : null;
 
     private static DataTable BuildAuthorTable(IReadOnlyList<Author> authors)
     {

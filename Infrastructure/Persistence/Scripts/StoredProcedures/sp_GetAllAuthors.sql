@@ -1,0 +1,10 @@
+USE ResearchPublications;
+GO
+
+CREATE OR ALTER PROCEDURE sp_GetAllAuthors
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT DISTINCT FullName FROM Authors ORDER BY FullName;
+END
+GO
