@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Research Publications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="searchApp()" x-init="init()">
+
+  <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
+      <h1 class="text-xl font-bold text-indigo-700 shrink-0">Research Publications</h1>
+      <input
+        type="search"
+        x-model="query"
+        @keyup.enter="search()"
+        @input.debounce.400ms="onQueryInput()"
+        placeholder="Search titles, abstracts, keywords…"
+        class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+      <button @click="search()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">Search</button>
+      <a href="admin.html" class="text-sm text-gray-500 hover:text-indigo-600 ml-2">Admin</a>
+    </div>
+
+    <!-- Filters -->
+    <div class="max-w-5xl mx-auto px-4 pb-3 flex flex-wrap gap-3 items-center">
+      <select x-model="filterYear" @change="search()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="">All Years</option>
+        <template x-for="y in years" :key="y">
+          <option :value="y" x-text="y"></option>
+        </template>
+      </select>
+
+      <input type="text" x-model="filterAuthor" @keyup.enter="search()" @input.debounce.400ms="search()"
+        placeholder="Filter by author…"
+        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-44" />
+
+      <input type="text" x-model="filterKeyword" @keyup.enter="search()" @input.debounce.400ms="search()"
+        placeholder="Filter by keyword…"
+        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-44" />
+
+      <button @click="clearFilters()" class="text-sm text-gray-400 hover:text-red-500 underline ml-1">Clear All</button>
+
+      <span class="ml-auto text-xs text-gray-400" x-show="!isSearchMode" x-text="'Showing ' + total + ' publications'"></span>
+      <span class="ml-auto text-xs text-gray-400" x-show="isSearchMode" x-text="results.length + ' results for &quot;' + lastQuery + '&quot;'"></span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <!-- Loading -->
+    <div x-show="loading" class="flex justify-center py-12">
+      <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="!loading && results.length === 0" class="text-center py-16 text-gray-400">
+      <p class="text-lg">No publications found.</p>
+      <p class="text-sm mt-1" x-show="isSearchMode">Try a different query or clear the filters.</p>
+    </div>
+
+    <!-- Cards -->
+    <div x-show="!loading" class="grid gap-4">
+      <template x-for="pub in results" :key="pub.id">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+          <div class="flex justify-between items-start gap-4">
+            <div class="min-w-0">
+              <h2 class="font-semibold text-gray-800 text-base leading-snug" x-text="pub.title"></h2>
+              <p class="text-sm text-indigo-600 mt-0.5" x-text="(pub.authors || []).join(', ')"></p>
+            </div>
+            <span class="text-xs text-gray-400 whitespace-nowrap mt-0.5" x-text="pub.year ?? ''"></span>
+          </div>
+
+          <!-- Keyword tags -->
+          <div class="flex flex-wrap gap-1 mt-2" x-show="pub.keywords">
+            <template x-for="kw in splitKeywords(pub.keywords)" :key="kw">
+              <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full" x-text="kw"></span>
+            </template>
+          </div>
+
+          <!-- Abstract snippet -->
+          <p class="text-sm text-gray-500 mt-2 line-clamp-2"
+             x-text="pub.abstractSnippet || pub.abstract || ''"></p>
+
+          <!-- Actions -->
+          <div class="flex gap-2 mt-3">
+            <a :href="'publication.html?id=' + pub.id"
+               class="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700">View</a>
+            <a x-show="pub.pdfFileName"
+               :href="'/api/publications/' + pub.id + '/download'"
+               class="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200">
+              Download PDF
+            </a>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Pagination (browse mode only) -->
+    <div x-show="!isSearchMode && !loading && totalPages > 1" class="flex justify-center gap-2 mt-8">
+      <button @click="changePage(page - 1)" :disabled="page <= 1"
+        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+      <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
+      <button @click="changePage(page + 1)" :disabled="page >= totalPages"
+        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+    </div>
+  </main>
+
+  <script>
+    function searchApp() {
+      return {
+        query: '',
+        filterYear: '',
+        filterAuthor: '',
+        filterKeyword: '',
+        results: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        loading: false,
+        isSearchMode: false,
+        lastQuery: '',
+        years: [],
+
+        get totalPages() {
+          return Math.max(1, Math.ceil(this.total / this.pageSize));
+        },
+
+        async init() {
+          await this.loadYears();
+          await this.loadAll();
+        },
+
+        async loadYears() {
+          try {
+            const res = await fetch('/api/publications?page=1&pageSize=1000');
+            const data = await res.json();
+            const ys = [...new Set((data.items || []).map(p => p.year).filter(Boolean))].sort((a,b) => b - a);
+            this.years = ys;
+          } catch {}
+        },
+
+        async loadAll() {
+          this.loading = true;
+          this.isSearchMode = false;
+          try {
+            const res = await fetch(`/api/publications?page=${this.page}&pageSize=${this.pageSize}`);
+            const data = await res.json();
+            this.results = data.items || [];
+            this.total   = data.total ?? 0;
+          } catch (e) {
+            this.results = [];
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        onQueryInput() {
+          if (!this.query.trim()) {
+            this.clearFilters();
+          } else {
+            this.search();
+          }
+        },
+
+        async search() {
+          if (!this.query.trim()) { await this.loadAll(); return; }
+          this.loading = true;
+          this.isSearchMode = true;
+          this.lastQuery = this.query;
+          try {
+            const params = new URLSearchParams({ q: this.query });
+            if (this.filterYear)    params.append('year',    this.filterYear);
+            if (this.filterAuthor)  params.append('author',  this.filterAuthor);
+            if (this.filterKeyword) params.append('keyword', this.filterKeyword);
+            const res = await fetch('/api/search?' + params);
+            this.results = await res.json();
+          } catch (e) {
+            this.results = [];
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async clearFilters() {
+          this.query = '';
+          this.filterYear = '';
+          this.filterAuthor = '';
+          this.filterKeyword = '';
+          this.page = 1;
+          await this.loadAll();
+        },
+
+        async changePage(newPage) {
+          if (newPage < 1 || newPage > this.totalPages) return;
+          this.page = newPage;
+          await this.loadAll();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        splitKeywords(kw) {
+          if (!kw) return [];
+          return kw.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      };
+    }
+  </script>
+</body>
+</html>

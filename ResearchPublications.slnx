@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/API/">
+    <Project Path="API/ResearchPublications.API.csproj" />
+  </Folder>
+  <Folder Name="/Application/">
+    <Project Path="Application/ResearchPublications.Application.csproj" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="Domain/ResearchPublications.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/ResearchPublications.Infrastructure.csproj" />
+  </Folder>
+</Solution>

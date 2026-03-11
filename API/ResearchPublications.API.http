@@ -1,0 +1,6 @@
+@ResearchPublications.API_HostAddress = http://localhost:5028
+
+GET {{ResearchPublications.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

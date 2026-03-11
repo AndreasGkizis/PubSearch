@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Research Publications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
+
+  <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
+      <a href="index.html" class="text-indigo-600 hover:underline text-sm">← Back to search</a>
+      <h1 class="text-xl font-bold text-indigo-700">Admin</h1>
+      <button @click="openNew()"
+        class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+        + Add Publication
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- Loading -->
+    <div x-show="loading" class="flex justify-center py-12">
+      <svg class="animate-spin h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </div>
+
+    <!-- Toast notification -->
+    <div x-show="toast" x-transition
+         class="fixed bottom-6 right-6 bg-green-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg z-50"
+         x-text="toast"></div>
+
+    <!-- Table -->
+    <div x-show="!loading" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">ID</th>
+            <th class="px-4 py-3 text-left">Title</th>
+            <th class="px-4 py-3 text-left">Authors</th>
+            <th class="px-4 py-3 text-center">Year</th>
+            <th class="px-4 py-3 text-center">PDF</th>
+            <th class="px-4 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="pub in publications" :key="pub.id">
+            <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+              <td class="px-4 py-3 text-gray-400" x-text="pub.id"></td>
+              <td class="px-4 py-3 font-medium text-gray-800 max-w-xs truncate" x-text="pub.title"></td>
+              <td class="px-4 py-3 text-gray-500 max-w-xs truncate" x-text="(pub.authors || []).join(', ')"></td>
+              <td class="px-4 py-3 text-center text-gray-500" x-text="pub.year ?? '—'"></td>
+              <td class="px-4 py-3 text-center">
+                <span x-show="pub.pdfFileName" class="text-green-600 text-xs font-medium">✓</span>
+                <span x-show="!pub.pdfFileName" class="text-gray-300 text-xs">—</span>
+              </td>
+              <td class="px-4 py-3 text-center flex justify-center gap-2">
+                <button @click="openEdit(pub.id)"
+                  class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded hover:bg-indigo-100">Edit</button>
+                <button @click="confirmDelete(pub)"
+                  class="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded hover:bg-red-100">Delete</button>
+              </td>
+            </tr>
+          </template>
+          <tr x-show="publications.length === 0">
+            <td colspan="6" class="px-4 py-8 text-center text-gray-400">No publications found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div x-show="!loading && totalPages > 1" class="flex justify-center gap-2 mt-6">
+      <button @click="changePage(page - 1)" :disabled="page <= 1"
+        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+      <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
+      <button @click="changePage(page + 1)" :disabled="page >= totalPages"
+        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+    </div>
+  </main>
+
+  <!-- ── Add / Edit Modal ────────────────────────────────────────────────── -->
+  <div x-show="showModal" x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
+       @click.self="closeModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 mb-10" @click.stop>
+
+      <h2 class="text-lg font-bold text-gray-800 mb-4"
+          x-text="form.id ? 'Edit Publication' : 'Add Publication'"></h2>
+
+      <!-- Error banner -->
+      <div x-show="formError" class="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-600 mb-4" x-text="formError"></div>
+
+      <form @submit.prevent="saveForm()" class="space-y-4">
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Title *</label>
+          <input type="text" x-model="form.title" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Year</label>
+            <input type="number" x-model.number="form.year" min="1900" max="2100"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">DOI</label>
+            <input type="text" x-model="form.doi"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Keywords <span class="font-normal text-gray-400">(comma-separated)</span></label>
+          <input type="text" x-model="form.keywords"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Authors <span class="font-normal text-gray-400">(one per line, optionally email: Name &lt;email&gt;)</span></label>
+          <textarea x-model="form.authorsText" rows="3"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-400 focus:outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Abstract</label>
+          <textarea x-model="form.abstract" rows="4"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Body</label>
+          <textarea x-model="form.body" rows="4"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">PDF File</label>
+            <div class="flex items-center gap-2">
+              <label class="cursor-pointer flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12V4m0 0L8 8m4-4l4 4" />
+                </svg>
+                <span class="truncate" x-text="form.pdfFileName || 'Choose PDF…'"
+                      :class="form.pdfFileName ? 'text-gray-700' : 'text-gray-400'"></span>
+                <input type="file" accept=".pdf" class="hidden" @change="uploadPdf($event)" />
+              </label>
+              <button type="button" x-show="form.pdfFileName" @click="form.pdfFileName = ''"
+                class="text-gray-400 hover:text-red-500 shrink-0" title="Remove PDF">✕</button>
+            </div>
+            <p x-show="uploadingPdf" class="text-xs text-indigo-500 mt-1">Uploading…</p>
+            <p x-show="uploadError" class="text-xs text-red-500 mt-1" x-text="uploadError"></p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Citation Count</label>
+            <input type="number" x-model.number="form.citationCount" min="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+          <button type="button" @click="closeModal()"
+            class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button type="submit" :disabled="saving"
+            class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+            <span x-text="saving ? 'Saving…' : (form.id ? 'Update' : 'Create')"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Delete confirm modal ──────────────────────────────────────────── -->
+  <div x-show="deleteTarget" x-transition
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="font-bold text-gray-800 mb-2">Delete Publication?</h3>
+      <p class="text-sm text-gray-500 mb-4">
+        "<span x-text="deleteTarget?.title"></span>" will be permanently removed.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button @click="deleteTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+        <button @click="doDelete()" :disabled="deleting"
+          class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+          <span x-text="deleting ? 'Deleting…' : 'Delete'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function adminApp() {
+      return {
+        publications: [],
+        total: 0,
+        page: 1,
+        pageSize: 30,
+        loading: false,
+        showModal: false,
+        saving: false,
+        formError: null,
+        deleteTarget: null,
+        deleting: false,
+        toast: null,
+
+        form: { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
+                abstract: '', body: '', pdfFileName: '', citationCount: 0 },
+        uploadingPdf: false,
+        uploadError: null,
+
+        get totalPages() { return Math.max(1, Math.ceil(this.total / this.pageSize)); },
+
+        async init() { await this.loadAll(); },
+
+        async loadAll() {
+          this.loading = true;
+          try {
+            const res = await fetch(`/api/publications?page=${this.page}&pageSize=${this.pageSize}`);
+            const data = await res.json();
+            this.publications = data.items || [];
+            this.total = data.total ?? 0;
+          } catch { this.publications = []; }
+          finally { this.loading = false; }
+        },
+
+        async changePage(p) {
+          if (p < 1 || p > this.totalPages) return;
+          this.page = p;
+          await this.loadAll();
+        },
+
+        openNew() {
+          this.form = { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
+                        abstract: '', body: '', pdfFileName: '', citationCount: 0 };
+          this.formError  = null;
+          this.uploadError = null;
+          this.showModal  = true;
+        },
+
+        async openEdit(id) {
+          try {
+            const res = await fetch(`/api/publications/${id}`);
+            if (!res.ok) return;
+            const pub = await res.json();
+            this.form = {
+              id: pub.id,
+              title: pub.title ?? '',
+              year: pub.year ?? null,
+              doi: pub.doi ?? '',
+              keywords: pub.keywords ?? '',
+              authorsText: (pub.authors || []).map(a => a.email ? `${a.fullName} <${a.email}>` : a.fullName).join('\n'),
+              abstract: pub.abstract ?? '',
+              body: pub.body ?? '',
+              pdfFileName: pub.pdfFileName ?? '',
+              citationCount: pub.citationCount ?? 0
+            };
+            this.formError  = null;
+            this.uploadError = null;
+            this.showModal  = true;
+          } catch {}
+        },
+
+        async uploadPdf(event) {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          this.uploadingPdf = true;
+          this.uploadError  = null;
+          try {
+            const fd  = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/publications/upload', { method: 'POST', body: fd });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              this.uploadError = err?.error || 'Upload failed.';
+              return;
+            }
+            const data = await res.json();
+            this.form.pdfFileName = data.fileName;
+          } catch {
+            this.uploadError = 'Network error during upload.';
+          } finally {
+            this.uploadingPdf = false;
+            event.target.value = ''; // reset input so same file can be re-selected
+          }
+        },
+
+        parseAuthors(text) {
+          return text.split('\n').map(line => {
+            const m = line.match(/^(.+?)\s*<(.+?)>\s*$/);
+            if (m) return { fullName: m[1].trim(), email: m[2].trim() };
+            return { fullName: line.trim(), email: null };
+          }).filter(a => a.fullName);
+        },
+
+        async saveForm() {
+          this.formError = null;
+          this.saving = true;
+          const payload = {
+            title:         this.form.title,
+            year:          this.form.year || null,
+            doi:           this.form.doi  || null,
+            keywords:      this.form.keywords || null,
+            abstract:      this.form.abstract || null,
+            body:          this.form.body || null,
+            pdfFileName:   this.form.pdfFileName || null,
+            citationCount: this.form.citationCount ?? 0,
+            authors:       this.parseAuthors(this.form.authorsText)
+          };
+          try {
+            const url    = this.form.id ? `/api/publications/${this.form.id}` : '/api/publications';
+            const method = this.form.id ? 'PUT' : 'POST';
+            const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); this.formError = err?.detail || 'Save failed.'; return; }
+            this.showToast(this.form.id ? 'Publication updated.' : 'Publication created.');
+            this.closeModal();
+            await this.loadAll();
+          } catch {
+            this.formError = 'Network error — please try again.';
+          } finally { this.saving = false; }
+        },
+
+        closeModal() { this.showModal = false; this.uploadError = null; },
+
+        confirmDelete(pub) { this.deleteTarget = pub; },
+
+        async doDelete() {
+          if (!this.deleteTarget) return;
+          this.deleting = true;
+          try {
+            await fetch(`/api/publications/${this.deleteTarget.id}`, { method: 'DELETE' });
+            this.showToast('Publication deleted.');
+            this.deleteTarget = null;
+            await this.loadAll();
+          } catch {} finally { this.deleting = false; }
+        },
+
+        showToast(msg) {
+          this.toast = msg;
+          setTimeout(() => { this.toast = null; }, 3000);
+        }
+      };
+    }
+  </script>
+</body>
+</html>

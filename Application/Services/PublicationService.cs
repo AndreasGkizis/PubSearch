@@ -1,0 +1,97 @@
+using ResearchPublications.Application.DTOs;
+using ResearchPublications.Domain.Entities;
+using ResearchPublications.Domain.Interfaces;
+
+namespace ResearchPublications.Application.Services;
+
+public class PublicationService(IPublicationRepository repository)
+{
+    public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(int page, int pageSize)
+    {
+        var (items, total) = await repository.GetAllAsync(page, pageSize);
+        return (items.Select(ToSummary), total);
+    }
+
+    public async Task<PublicationDetailDto> GetDetailAsync(int id)
+    {
+        var pub = await repository.GetByIdAsync(id)
+            ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
+        return ToDetail(pub);
+    }
+
+    public async Task<int> CreateAsync(PublicationDetailDto dto)
+    {
+        var entity = FromDetail(dto);
+        return await repository.CreateAsync(entity);
+    }
+
+    public async Task UpdateAsync(int id, PublicationDetailDto dto)
+    {
+        _ = await repository.GetByIdAsync(id)
+            ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
+        var entity = FromDetail(dto);
+        entity.Id = id;
+        await repository.UpdateAsync(entity);
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        _ = await repository.GetByIdAsync(id)
+            ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
+        await repository.DeleteAsync(id);
+    }
+
+    // ── Mapping helpers ────────────────────────────────────────────────────
+
+    private static PublicationSummaryDto ToSummary(Publication p) => new()
+    {
+        Id = p.Id,
+        Title = p.Title,
+        Authors = p.Authors.Select(a => a.FullName).ToList(),
+        Year = p.Year,
+        Keywords = p.Keywords,
+        AbstractSnippet = p.Abstract is { Length: > 200 }
+            ? p.Abstract[..200] + "…"
+            : p.Abstract,
+        PdfFileName = p.PdfFileName
+    };
+
+    private static PublicationDetailDto ToDetail(Publication p) => new()
+    {
+        Id = p.Id,
+        Title = p.Title,
+        Abstract = p.Abstract,
+        Body = p.Body,
+        Keywords = p.Keywords,
+        Year = p.Year,
+        DOI = p.DOI,
+        CitationCount = p.CitationCount,
+        PdfFileName = p.PdfFileName,
+        CreatedAt = p.CreatedAt,
+        LastModified = p.LastModified,
+        Authors = p.Authors.Select(a => new AuthorDto
+        {
+            Id = a.Id,
+            FullName = a.FullName,
+            Email = a.Email
+        }).ToList()
+    };
+
+    private static Publication FromDetail(PublicationDetailDto dto) => new()
+    {
+        Title = dto.Title,
+        Abstract = dto.Abstract,
+        Body = dto.Body,
+        Keywords = dto.Keywords,
+        Year = dto.Year,
+        DOI = dto.DOI,
+        CitationCount = dto.CitationCount,
+        PdfFileName = dto.PdfFileName,
+        Authors = dto.Authors.Select(a => new Author
+        {
+            Id = a.Id,
+            FullName = a.FullName,
+            Email = a.Email
+        }).ToList()
+    };
+}
