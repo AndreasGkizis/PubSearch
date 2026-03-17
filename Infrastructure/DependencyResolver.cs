@@ -21,7 +21,9 @@ public static class DependencyResolver
         services.AddSingleton(sqlSettings);
 
         services.AddDbContext<AppDbCntx>(opts =>
-            opts.UseSqlServer(sqlSettings.FormattedConnectionString));
+            opts.UseSqlServer(sqlSettings.FormattedConnectionString,
+                x => x.MigrationsAssembly("ResearchPublications.Infrastructure")
+                       .MigrationsHistoryTable("__EFMigrationsHistory")));
 
         services.AddScoped<IPublicationRepository, PublicationRepository>();
         services.AddScoped<ISearchService, MssqlSearchService>();

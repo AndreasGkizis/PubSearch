@@ -6,7 +6,8 @@ namespace ResearchPublications.Infrastructure.Persistence;
 /// <summary>
 /// Used by <c>dotnet ef</c> at design time to create a <see cref="AppDbCntx"/> instance
 /// without needing the full host to run. Run from the repo root:
-/// <code>dotnet ef migrations add &lt;Name&gt; --project Infrastructure --startup-project API</code>
+/// <code>dotnet ef migrations add &lt;Name&gt; --project Infrastructure --startup-project API --output-dir Persistence/Migrations</code>
+/// All migrations must live in <c>Infrastructure/Persistence/Migrations/</c> — always include the --output-dir flag.
 /// </summary>
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbCntx>
 {
