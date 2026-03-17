@@ -1,38 +1,26 @@
+using Microsoft.EntityFrameworkCore;
 using ResearchPublications.API.Middleware;
-using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Application.Services;
-using ResearchPublications.Domain.Interfaces;
-using ResearchPublications.Infrastructure.Files;
+using ResearchPublications.Infrastructure;
 using ResearchPublications.Infrastructure.Persistence;
-using ResearchPublications.Infrastructure.Persistence.Repositories;
-using ResearchPublications.Infrastructure.Search;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ──────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-
-builder.Services.AddSingleton<DapperContext>();
-builder.Services.AddScoped<IPublicationRepository, PublicationRepository>();
-builder.Services.AddScoped<PublicationService>(); 
-
-// TODO: To swap search, replace MssqlSearchService with TypesenseSearchService
-//       (or any ISearchService implementation) here only.
-builder.Services.AddScoped<ISearchService, MssqlSearchService>();
-
-// TODO: To swap file storage, replace LocalFileService with AzureBlobFileService
-//       (or any IFileService implementation) here only.
-builder.Services.AddScoped<IFileService, LocalFileService>();
-
-builder.Services.AddTransient<DatabaseInitializer>();
+builder.Services.AddScoped<PublicationService>();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// ── Database initialisation ───────────────────────────────────────────────
+// ── Database migration + seed ─────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
-    await initializer.InitializeAsync();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbCntx>();
+    await dbContext.Database.MigrateAsync();
+
+    var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
+    await seeder.SeedAsync();
 }
 
 // ── Ensure PDF storage folder exists ──────────────────────────────────────
@@ -48,3 +36,4 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
+

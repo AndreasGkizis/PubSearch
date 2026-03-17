@@ -1,6 +1,7 @@
 using ResearchPublications.Application.DTOs;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
+using Keyword = ResearchPublications.Domain.Entities.Keyword;
 
 namespace ResearchPublications.Application.Services;
 
@@ -56,7 +57,7 @@ public class PublicationService(IPublicationRepository repository)
         Title = p.Title,
         Authors = p.Authors.Select(a => a.FullName).ToList(),
         Year = p.Year,
-        Keywords = p.Keywords,
+        Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
         AbstractSnippet = p.Abstract is { Length: > 200 }
             ? p.Abstract[..200] + "…"
             : p.Abstract,
@@ -69,7 +70,7 @@ public class PublicationService(IPublicationRepository repository)
         Title = p.Title,
         Abstract = p.Abstract,
         Body = p.Body,
-        Keywords = p.Keywords,
+        Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
         Year = p.Year,
         DOI = p.DOI,
         CitationCount = p.CitationCount,
@@ -89,7 +90,12 @@ public class PublicationService(IPublicationRepository repository)
         Title = dto.Title,
         Abstract = dto.Abstract,
         Body = dto.Body,
-        Keywords = dto.Keywords,
+        Keywords = string.IsNullOrWhiteSpace(dto.Keywords)
+            ? []
+            : dto.Keywords
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(v => new Keyword { Value = v })
+                .ToList(),
         Year = dto.Year,
         DOI = dto.DOI,
         CitationCount = dto.CitationCount,

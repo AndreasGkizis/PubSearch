@@ -1,30 +1,16 @@
-using Dapper;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
-using ResearchPublications.Infrastructure.Constants;
-using ResearchPublications.Infrastructure.Persistence;
-using System.Data;
 
 namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
-public class PublicationRepository(DapperContext context) : IPublicationRepository
+public class PublicationRepository(AppDbCntx context) : IPublicationRepository
 {
-    public async Task<Publication?> GetByIdAsync(int id)
-    {
-        using var conn = context.CreateConnection();
-        using var multi = await conn.QueryMultipleAsync(
-            StoredProcedures.GetPublicationById,
-            new { Id = id },
-            commandType: CommandType.StoredProcedure);
-
-        var pub = await multi.ReadFirstOrDefaultAsync<Publication>();
-        if (pub is null) return null;
-
-        var authors = (await multi.ReadAsync<Author>()).ToList();
-        pub.Authors = authors;
-        return pub;
-    }
+    public async Task<Publication?> GetByIdAsync(int id) =>
+        await context.Publications
+            .Include(p => p.Authors)
+            .Include(p => p.Keywords)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<(IEnumerable<Publication> Items, int TotalCount)> GetAllAsync(
         int page, int pageSize,
@@ -32,151 +18,116 @@ public class PublicationRepository(DapperContext context) : IPublicationReposito
         IReadOnlyList<string>? authors = null,
         IReadOnlyList<string>? keywords = null)
     {
-        using var conn = context.CreateConnection();
-        using var multi = await conn.QueryMultipleAsync(
-            StoredProcedures.GetAllPublications,
-            new
-            {
-                Page     = page,
-                PageSize = pageSize,
-                YearFrom = yearFrom,
-                YearTo   = yearTo,
-                Authors  = SerializeList(authors),
-                Keywords = SerializeList(keywords)
-            },
-            commandType: CommandType.StoredProcedure);
+        var query = context.Publications
+            .Include(p => p.Authors)
+            .Include(p => p.Keywords)
+            .AsQueryable();
 
-        var totalCount = await multi.ReadFirstAsync<int>();
-        var rows = (await multi.ReadAsync<PublicationRow>()).ToList();
+        if (yearFrom.HasValue)
+            query = query.Where(p => p.Year >= yearFrom);
 
-        var publications = rows.Select(r => new Publication
-        {
-            Id = r.Id,
-            Title = r.Title,
-            Abstract = r.Abstract,
-            Body = r.Body,
-            Keywords = r.Keywords,
-            Year = r.Year,
-            DOI = r.DOI,
-            CitationCount = r.CitationCount,
-            PdfFileName = r.PdfFileName,
-            CreatedAt = r.CreatedAt,
-            LastModified = r.LastModified,
-            Authors = string.IsNullOrWhiteSpace(r.AuthorNames)
-                ? []
-                : r.AuthorNames.Split(", ").Select(n => new Author { FullName = n }).ToList()
-        });
+        if (yearTo.HasValue)
+            query = query.Where(p => p.Year <= yearTo);
 
-        return (publications, totalCount);
+        if (authors is { Count: > 0 })
+            query = query.Where(p => p.Authors.Any(a => authors.Contains(a.FullName)));
+
+        if (keywords is { Count: > 0 })
+            query = query.Where(p => p.Keywords.Any(k => keywords.Contains(k.Value)));
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(p => p.LastModified)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, total);
     }
 
     public async Task<int> CreateAsync(Publication publication)
     {
-        using var conn = (SqlConnection)context.CreateConnection();
-        await conn.OpenAsync();
+        // Resolve keywords: reuse existing records matched by value
+        for (int i = 0; i < publication.Keywords.Count; i++)
+        {
+            var kw = publication.Keywords[i];
+            var existing = await context.Keywords.FirstOrDefaultAsync(k => k.Value == kw.Value);
+            if (existing != null)
+                publication.Keywords[i] = existing;
+        }
 
-        var authorsTable = BuildAuthorTable(publication.Authors);
-
-        var result = await conn.QueryFirstAsync<int>(
-            StoredProcedures.CreatePublication,
-            new
+        // Attach existing authors by ID to avoid re-inserting them
+        for (int i = 0; i < publication.Authors.Count; i++)
+        {
+            var author = publication.Authors[i];
+            if (author.Id > 0)
             {
-                publication.Title,
-                publication.Abstract,
-                publication.Body,
-                publication.Keywords,
-                publication.Year,
-                publication.DOI,
-                publication.CitationCount,
-                publication.PdfFileName,
-                Authors = authorsTable.AsTableValuedParameter(TableTypes.AuthorTableType)
-            },
-            commandType: CommandType.StoredProcedure);
+                var tracked = await context.Authors.FindAsync(author.Id);
+                if (tracked != null)
+                    publication.Authors[i] = tracked;
+            }
+        }
 
-        return result;
+        context.Publications.Add(publication);
+        await context.SaveChangesAsync();
+        return publication.Id;
     }
 
     public async Task UpdateAsync(Publication publication)
     {
-        using var conn = (SqlConnection)context.CreateConnection();
-        await conn.OpenAsync();
+        var existing = await context.Publications
+            .Include(p => p.Authors)
+            .Include(p => p.Keywords)
+            .FirstOrDefaultAsync(p => p.Id == publication.Id)
+            ?? throw new InvalidOperationException($"Publication {publication.Id} not found.");
 
-        var authorsTable = BuildAuthorTable(publication.Authors);
+        existing.Title = publication.Title;
+        existing.Abstract = publication.Abstract;
+        existing.Body = publication.Body;
+        existing.Year = publication.Year;
+        existing.DOI = publication.DOI;
+        existing.CitationCount = publication.CitationCount;
+        existing.PdfFileName = publication.PdfFileName;
+        existing.LastModified = DateTime.UtcNow;
 
-        await conn.ExecuteAsync(
-            StoredProcedures.UpdatePublication,
-            new
+        existing.Authors.Clear();
+        foreach (var author in publication.Authors)
+        {
+            if (author.Id > 0)
             {
-                publication.Id,
-                publication.Title,
-                publication.Abstract,
-                publication.Body,
-                publication.Keywords,
-                publication.Year,
-                publication.DOI,
-                publication.CitationCount,
-                publication.PdfFileName,
-                Authors = authorsTable.AsTableValuedParameter(TableTypes.AuthorTableType)
-            },
-            commandType: CommandType.StoredProcedure);
+                var tracked = await context.Authors.FindAsync(author.Id);
+                if (tracked != null)
+                {
+                    existing.Authors.Add(tracked);
+                    continue;
+                }
+            }
+            existing.Authors.Add(author);
+        }
+
+        existing.Keywords.Clear();
+        foreach (var kw in publication.Keywords)
+        {
+            var resolved = await context.Keywords.FirstOrDefaultAsync(k => k.Value == kw.Value) ?? kw;
+            existing.Keywords.Add(resolved);
+        }
+
+        await context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
-        using var conn = context.CreateConnection();
-        await conn.ExecuteAsync(
-            StoredProcedures.DeletePublication,
-            new { Id = id },
-            commandType: CommandType.StoredProcedure);
+        var publication = await context.Publications.FindAsync(id);
+        if (publication is not null)
+        {
+            context.Publications.Remove(publication);
+            await context.SaveChangesAsync();
+        }
     }
 
-    public async Task<IEnumerable<string>> GetAllAuthorsAsync()
-    {
-        using var conn = context.CreateConnection();
-        return await conn.QueryAsync<string>(
-            StoredProcedures.GetAllAuthors,
-            commandType: CommandType.StoredProcedure);
-    }
+    public async Task<IEnumerable<string>> GetAllAuthorsAsync() =>
+        await context.Authors.Select(a => a.FullName).ToListAsync();
 
-    public async Task<IEnumerable<string>> GetAllKeywordsAsync()
-    {
-        using var conn = context.CreateConnection();
-        return await conn.QueryAsync<string>(
-            StoredProcedures.GetAllKeywords,
-            commandType: CommandType.StoredProcedure);
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
-
-    private static string? SerializeList(IReadOnlyList<string>? values) =>
-        values is { Count: > 0 } ? string.Join(",", values) : null;
-
-    private static DataTable BuildAuthorTable(IReadOnlyList<Author> authors)
-    {
-        var table = new DataTable();
-        table.Columns.Add("FullName", typeof(string));
-        table.Columns.Add("Email",    typeof(string));
-
-        foreach (var author in authors)
-            table.Rows.Add(author.FullName, author.Email as object ?? DBNull.Value);
-
-        return table;
-    }
-
-    // Projection for the denormalised GetAll query
-    private sealed class PublicationRow
-    {
-        public int Id { get; init; }
-        public string Title { get; init; } = string.Empty;
-        public string? Abstract { get; init; }
-        public string? Body { get; init; }
-        public string? Keywords { get; init; }
-        public int? Year { get; init; }
-        public string? DOI { get; init; }
-        public int CitationCount { get; init; }
-        public string? PdfFileName { get; init; }
-        public DateTime CreatedAt { get; init; }
-        public DateTime LastModified { get; init; }
-        public string? AuthorNames { get; init; }
-    }
+    public async Task<IEnumerable<string>> GetAllKeywordsAsync() =>
+        await context.Keywords.Select(k => k.Value).ToListAsync();
 }

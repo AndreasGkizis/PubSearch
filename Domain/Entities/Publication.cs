@@ -8,7 +8,7 @@ public class Publication : BaseDbEntity
     public int? Year { get; set; }
     public string? DOI { get; set; }
     public string? PdfFileName { get; set; }
+    public int CitationCount { get; set; }
 
-// Dapper will map into these collections via multi-mapping or separate queries
     public List<Author> Authors { get; set; } = [];
     public List<Keyword> Keywords { get; set; } = [];}
