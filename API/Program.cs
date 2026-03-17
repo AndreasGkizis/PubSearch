@@ -14,7 +14,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddScoped<IPublicationRepository, PublicationRepository>();
-builder.Services.AddScoped<PublicationService>();
+builder.Services.AddScoped<PublicationService>(); 
 
 // TODO: To swap search, replace MssqlSearchService with TypesenseSearchService
 //       (or any ISearchService implementation) here only.

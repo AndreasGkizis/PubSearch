@@ -1,17 +1,14 @@
 namespace ResearchPublications.Domain.Entities;
 
-public class Publication
+public class Publication : BaseDbEntity
 {
-    public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Abstract { get; set; }
     public string? Body { get; set; }
-    public string? Keywords { get; set; }
     public int? Year { get; set; }
     public string? DOI { get; set; }
-    public int CitationCount { get; set; }
     public string? PdfFileName { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime LastModified { get; set; }
-    public IReadOnlyList<Author> Authors { get; set; } = [];
-}
+
+// Dapper will map into these collections via multi-mapping or separate queries
+    public List<Author> Authors { get; set; } = [];
+    public List<Keyword> Keywords { get; set; } = [];}
