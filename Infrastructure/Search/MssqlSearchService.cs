@@ -15,10 +15,7 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
         var q = context.Publications
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
-            .Where(p =>
-                EF.Functions.FreeText(p.Title, query) ||
-                EF.Functions.FreeText(p.Abstract!, query) ||
-                EF.Functions.FreeText(p.Body!, query));
+            .Where(p => p.Title.Contains(query));
 
         if (filters.YearFrom.HasValue)
             q = q.Where(p => p.Year >= filters.YearFrom);
