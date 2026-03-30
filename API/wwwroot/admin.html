@@ -258,6 +258,7 @@
               doi: pub.doi ?? '',
               keywords: pub.keywords ?? '',
               authorsText: (pub.authors || []).map(a => a.email ? `${a.fullName} <${a.email}>` : a.fullName).join('\n'),
+              authorObjects: pub.authors || [],
               abstract: pub.abstract ?? '',
               body: pub.body ?? '',
               pdfFileName: pub.pdfFileName ?? '',
@@ -294,11 +295,15 @@
         },
 
         parseAuthors(text) {
+          const saved = this.form.authorObjects || [];
           return text.split('\n').map(line => {
             const m = line.match(/^(.+?)\s*<(.+?)>\s*$/);
-            if (m) return { fullName: m[1].trim(), email: m[2].trim() };
-            return { fullName: line.trim(), email: null };
-          }).filter(a => a.fullName);
+            const fullName = m ? m[1].trim() : line.trim();
+            const email = m ? m[2].trim() : null;
+            if (!fullName) return null;
+            const existing = saved.find(a => a.fullName === fullName);
+            return { id: existing?.id ?? 0, fullName, email };
+          }).filter(Boolean);
         },
 
         async saveForm() {

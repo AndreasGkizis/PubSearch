@@ -56,7 +56,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
                 publication.Keywords[i] = existing;
         }
 
-        // Attach existing authors by ID to avoid re-inserting them
+        // Resolve authors: reuse existing records matched by ID or name
         for (int i = 0; i < publication.Authors.Count; i++)
         {
             var author = publication.Authors[i];
@@ -64,8 +64,15 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
             {
                 var tracked = await context.Authors.FindAsync(author.Id);
                 if (tracked != null)
+                {
                     publication.Authors[i] = tracked;
+                    continue;
+                }
             }
+
+            var byName = await context.Authors.FirstOrDefaultAsync(a => a.FullName == author.FullName);
+            if (byName != null)
+                publication.Authors[i] = byName;
         }
 
         context.Publications.Add(publication);
@@ -102,7 +109,10 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
                     continue;
                 }
             }
-            existing.Authors.Add(author);
+
+            // Resolve by name to avoid inserting duplicates when ID is unknown
+            var byName = await context.Authors.FirstOrDefaultAsync(a => a.FullName == author.FullName);
+            existing.Authors.Add(byName ?? author);
         }
 
         existing.Keywords.Clear();
