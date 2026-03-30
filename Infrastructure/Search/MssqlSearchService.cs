@@ -7,12 +7,14 @@ namespace ResearchPublications.Infrastructure.Search;
 
 public class MssqlSearchService(AppDbCntx context) : ISearchService
 {
-    public async Task<IEnumerable<SearchResultDto>> SearchAsync(string query, SearchFilters filters)
+    public async Task<(IEnumerable<SearchResultDto> Items, int TotalCount)> SearchAsync(
+        string query, SearchFilters filters, int page, int pageSize)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return [];
+            return ([], 0);
 
         var q = context.Publications
+            .AsNoTracking()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .Where(p => p.Title.Contains(query));
@@ -29,9 +31,14 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
         if (filters.Keywords is { Count: > 0 })
             q = q.Where(p => p.Keywords.Any(k => filters.Keywords.Contains(k.Value)));
 
-        var results = await q.ToListAsync();
+        var total = await q.CountAsync();
+        var results = await q
+            .OrderByDescending(p => p.LastModified)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
-        return results.Select(p => new SearchResultDto
+        var items = results.Select(p => new SearchResultDto
         {
             Id = p.Id,
             Title = p.Title,
@@ -46,5 +53,7 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
             PdfFileName = p.PdfFileName,
             Rank = 1.0
         });
+
+        return (items, total);
     }
 }

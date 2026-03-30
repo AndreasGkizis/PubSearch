@@ -8,6 +8,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
 {
     public async Task<Publication?> GetByIdAsync(int id) =>
         await context.Publications
+            .AsNoTracking()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -19,6 +20,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
         IReadOnlyList<string>? keywords = null)
     {
         var query = context.Publications
+            .AsNoTracking()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .AsQueryable();

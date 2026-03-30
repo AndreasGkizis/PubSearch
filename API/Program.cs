@@ -7,6 +7,9 @@ using ResearchPublications.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ──────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 builder.Services.AddControllers();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -30,9 +33,10 @@ if (!string.IsNullOrWhiteSpace(pdfPath))
 
 // ── Middleware pipeline ───────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors();
+app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
