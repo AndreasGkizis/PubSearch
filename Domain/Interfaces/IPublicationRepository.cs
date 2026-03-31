@@ -13,6 +13,6 @@ public interface IPublicationRepository
     Task<int> CreateAsync(Publication publication);
     Task UpdateAsync(Publication publication);
     Task DeleteAsync(int id);
-    Task<IEnumerable<string>> GetAllAuthorsAsync();
-    Task<IEnumerable<string>> GetAllKeywordsAsync();
+    Task<IEnumerable<(string Name, int Count)>> GetAllAuthorsAsync();
+    Task<IEnumerable<(string Name, int Count)>> GetAllKeywordsAsync();
 }

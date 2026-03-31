@@ -46,8 +46,17 @@ public class PublicationService(IPublicationRepository repository)
         await repository.DeleteAsync(id);
     }
 
-    public Task<IEnumerable<string>> GetAllAuthorsAsync()  => repository.GetAllAuthorsAsync();
-    public Task<IEnumerable<string>> GetAllKeywordsAsync() => repository.GetAllKeywordsAsync();
+    public async Task<IEnumerable<FilterOptionDto>> GetAllAuthorsAsync()
+    {
+        var items = await repository.GetAllAuthorsAsync();
+        return items.Select(x => new FilterOptionDto(x.Name, x.Count));
+    }
+
+    public async Task<IEnumerable<FilterOptionDto>> GetAllKeywordsAsync()
+    {
+        var items = await repository.GetAllKeywordsAsync();
+        return items.Select(x => new FilterOptionDto(x.Name, x.Count));
+    }
 
     // ── Mapping helpers ────────────────────────────────────────────────────
 
