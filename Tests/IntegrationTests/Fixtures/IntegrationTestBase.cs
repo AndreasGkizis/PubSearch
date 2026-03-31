@@ -25,7 +25,6 @@ public abstract class IntegrationTestBase
         string? keywords = null,
         string? @abstract = null,
         string? doi = null,
-        int citationCount = 0,
         List<AuthorDto>? authors = null)
     {
         var payload = new PublicationDetailDto
@@ -35,7 +34,6 @@ public abstract class IntegrationTestBase
             Keywords      = keywords,
             Abstract      = @abstract,
             DOI           = doi,
-            CitationCount = citationCount,
             Authors       = authors ?? [new AuthorDto { FullName = "Default Author" }]
         };
 

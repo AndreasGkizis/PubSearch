@@ -95,7 +95,6 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
         existing.Body = publication.Body;
         existing.Year = publication.Year;
         existing.DOI = publication.DOI;
-        existing.CitationCount = publication.CitationCount;
         existing.PdfFileName = publication.PdfFileName;
         existing.LastModified = DateTime.UtcNow;
 
@@ -138,8 +137,8 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
     }
 
     public async Task<IEnumerable<string>> GetAllAuthorsAsync() =>
-        await context.Authors.Select(a => a.FullName).ToListAsync();
+        await context.Authors.Select(a => a.FullName).Distinct().OrderBy(n => n).ToListAsync();
 
     public async Task<IEnumerable<string>> GetAllKeywordsAsync() =>
-        await context.Keywords.Select(k => k.Value).ToListAsync();
+        await context.Keywords.Select(k => k.Value).Distinct().OrderBy(v => v).ToListAsync();
 }

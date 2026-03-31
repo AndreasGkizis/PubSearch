@@ -21,7 +21,7 @@ public class PublicationsController(PublicationService publicationService, IFile
         [FromQuery] string[]? keywords = null)
     {
         if (page < 1)    page     = 1;
-        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        if (pageSize < 1 || pageSize > 20) pageSize = 20;
 
         var hasFilters = yearFrom.HasValue || yearTo.HasValue
             || (authors?.Length > 0) || (keywords?.Length > 0);
@@ -35,6 +35,7 @@ public class PublicationsController(PublicationService publicationService, IFile
 
     // GET /api/publications/authors
     [HttpGet("authors")]
+    [ResponseCache(Duration = 300)]
     public async Task<IActionResult> GetAuthors()
     {
         var authors = await publicationService.GetAllAuthorsAsync();
@@ -43,6 +44,7 @@ public class PublicationsController(PublicationService publicationService, IFile
 
     // GET /api/publications/keywords
     [HttpGet("keywords")]
+    [ResponseCache(Duration = 300)]
     public async Task<IActionResult> GetKeywords()
     {
         var keywords = await publicationService.GetAllKeywordsAsync();

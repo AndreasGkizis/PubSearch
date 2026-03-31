@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
+<body class="bg-gray-50 min-h-screen" x-data="adminApp()">
 
   <header class="bg-white shadow-sm sticky top-0 z-10">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
@@ -34,6 +34,18 @@
     <div x-show="toast" x-transition
          class="fixed bottom-6 right-6 bg-green-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg z-50"
          x-text="toast"></div>
+
+    <!-- Status bar + top pagination -->
+    <div x-show="!loading" class="flex items-center mb-4">
+      <span class="text-xs text-gray-400" x-text="'Found ' + total + ' publications'"></span>
+      <div x-show="totalPages > 1" class="ml-auto flex items-center gap-2">
+        <button @click="changePage(page - 1)" :disabled="page <= 1"
+          class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+        <span class="text-xs text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
+        <button @click="changePage(page + 1)" :disabled="page >= totalPages"
+          class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+      </div>
+    </div>
 
     <!-- Table -->
     <div x-show="!loading" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
@@ -160,11 +172,7 @@
             <p x-show="uploadingPdf" class="text-xs text-indigo-500 mt-1">Uploading…</p>
             <p x-show="uploadError" class="text-xs text-red-500 mt-1" x-text="uploadError"></p>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Citation Count</label>
-            <input type="number" x-model.number="form.citationCount" min="0"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-          </div>
+
         </div>
 
         <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
@@ -203,7 +211,7 @@
         publications: [],
         total: 0,
         page: 1,
-        pageSize: 30,
+        pageSize: 20,
         loading: false,
         showModal: false,
         saving: false,
@@ -213,7 +221,7 @@
         toast: null,
 
         form: { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
-                abstract: '', body: '', pdfFileName: '', citationCount: 0 },
+                abstract: '', body: '', pdfFileName: '' },
         uploadingPdf: false,
         uploadError: null,
 
@@ -240,7 +248,7 @@
 
         openNew() {
           this.form = { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
-                        abstract: '', body: '', pdfFileName: '', citationCount: 0 };
+                        abstract: '', body: '', pdfFileName: '' };
           this.formError  = null;
           this.uploadError = null;
           this.showModal  = true;
@@ -261,8 +269,7 @@
               authorObjects: pub.authors || [],
               abstract: pub.abstract ?? '',
               body: pub.body ?? '',
-              pdfFileName: pub.pdfFileName ?? '',
-              citationCount: pub.citationCount ?? 0
+              pdfFileName: pub.pdfFileName ?? ''
             };
             this.formError  = null;
             this.uploadError = null;
@@ -317,7 +324,6 @@
             abstract:      this.form.abstract || null,
             body:          this.form.body || null,
             pdfFileName:   this.form.pdfFileName || null,
-            citationCount: this.form.citationCount ?? 0,
             authors:       this.parseAuthors(this.form.authorsText)
           };
           try {

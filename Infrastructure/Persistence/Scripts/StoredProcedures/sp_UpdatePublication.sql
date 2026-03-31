@@ -9,7 +9,6 @@ CREATE OR ALTER PROCEDURE sp_UpdatePublication
     @Keywords     NVARCHAR(1000) = NULL,
     @Year         INT            = NULL,
     @DOI          NVARCHAR(200)  = NULL,
-    @CitationCount INT           = 0,
     @PdfFileName  NVARCHAR(500)  = NULL,
     @Authors      dbo.AuthorTableType READONLY
 AS
@@ -26,7 +25,6 @@ BEGIN
             Keywords      = @Keywords,
             Year          = @Year,
             DOI           = @DOI,
-            CitationCount = @CitationCount,
             PdfFileName   = @PdfFileName,
             LastModified  = GETUTCDATE()
         WHERE Id = @Id;

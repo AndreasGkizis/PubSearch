@@ -73,7 +73,6 @@ public class PublicationService(IPublicationRepository repository)
         Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
         Year = p.Year,
         DOI = p.DOI,
-        CitationCount = p.CitationCount,
         PdfFileName = p.PdfFileName,
         CreatedAt = p.CreatedAt,
         LastModified = p.LastModified,
@@ -98,7 +97,6 @@ public class PublicationService(IPublicationRepository repository)
                 .ToList(),
         Year = dto.Year,
         DOI = dto.DOI,
-        CitationCount = dto.CitationCount,
         PdfFileName = dto.PdfFileName,
         Authors = dto.Authors.Select(a => new Author
         {

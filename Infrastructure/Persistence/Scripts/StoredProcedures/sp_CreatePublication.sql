@@ -19,7 +19,6 @@ CREATE OR ALTER PROCEDURE sp_CreatePublication
     @Keywords     NVARCHAR(1000) = NULL,
     @Year         INT            = NULL,
     @DOI          NVARCHAR(200)  = NULL,
-    @CitationCount INT           = 0,
     @PdfFileName  NVARCHAR(500)  = NULL,
     @Authors      dbo.AuthorTableType READONLY
 AS
@@ -29,8 +28,8 @@ BEGIN
 
     BEGIN TRY
         -- Insert publication
-        INSERT INTO Publications (Title, Abstract, Body, Keywords, Year, DOI, CitationCount, PdfFileName)
-        VALUES (@Title, @Abstract, @Body, @Keywords, @Year, @DOI, @CitationCount, @PdfFileName);
+        INSERT INTO Publications (Title, Abstract, Body, Keywords, Year, DOI, PdfFileName)
+        VALUES (@Title, @Abstract, @Body, @Keywords, @Year, @DOI, @PdfFileName);
 
         DECLARE @NewId INT = SCOPE_IDENTITY();
 

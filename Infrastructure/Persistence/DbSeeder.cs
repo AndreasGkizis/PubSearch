@@ -133,9 +133,9 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
 
         Randomizer.Seed = new Random(Seed);
 
-        var authors = GenerateAuthors(5);
-        var keywords = GenerateKeywords(15);
-        var publications = GeneratePublications(10, authors, keywords);
+        var authors = GenerateAuthors(1000);
+        var keywords = GenerateKeywords(KeywordPool.Length);
+        var publications = GeneratePublications(50000, authors, keywords);
 
         context.Authors.AddRange(authors);
         context.Keywords.AddRange(keywords);
@@ -183,7 +183,6 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
             .RuleFor(p => p.Year, f => f.Random.Int(2015, 2025))
             .RuleFor(p => p.DOI, f =>
                 $"10.{f.Random.Int(1000, 9999)}/{f.Random.AlphaNumeric(8)}")
-            .RuleFor(p => p.CitationCount, f => f.Random.Int(0, 500))
             .RuleFor(p => p.Authors, f =>
                 f.PickRandom(authors, f.Random.Int(1, 3)).ToList())
             .RuleFor(p => p.Keywords, f =>

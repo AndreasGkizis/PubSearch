@@ -46,7 +46,6 @@
         <span x-show="pub?.doi"><strong>DOI:</strong>
           <a :href="'https://doi.org/' + pub?.doi" target="_blank" class="text-indigo-500 hover:underline" x-text="pub?.doi"></a>
         </span>
-        <span><strong>Citations:</strong> <span x-text="pub?.citationCount ?? 0"></span></span>
       </div>
 
       <div x-show="pub?.keywords">

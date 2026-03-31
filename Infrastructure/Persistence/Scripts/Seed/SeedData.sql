@@ -8,7 +8,7 @@ INSERT INTO Authors (FullName, Email) VALUES
 GO
 
 -- ── Publications ─────────────────────────────────────────────────────────
-INSERT INTO Publications (Title, Abstract, Body, Keywords, Year, DOI, CitationCount, PdfFileName) VALUES
+INSERT INTO Publications (Title, Abstract, Body, Keywords, Year, DOI, PdfFileName) VALUES
 (
     'Space is Not Nothing: Heritage Aesthetics and the Struggle for Space',
     'The paper explores government encouraged industrial developments in the name of climate change mitigation and the impacts on the aesthetic and social values of rural cultural landscapes and rural lifestyles. The squandering of space and the disruption of spatial scale is also considered and discussed with regard to cultural landscapes. Examples of urban and rural landscapes are presented with an analysis of the effectiveness of heritage listings and the at times unjust and arduous plight forced on rural communities by development impacts.',
@@ -22,7 +22,6 @@ Spaces as components of cultural heritage places contribute to cultural capital.
     'heritage aesthetics, cultural landscapes, space, rural landscapes, West Lake, Hangzhou, Canberra, heritage listing, spatial values, cultural capital',
     2011,
     NULL,
-    15,
     'I-2-Article4_Ramsay_Han.pdf'
 );
 GO

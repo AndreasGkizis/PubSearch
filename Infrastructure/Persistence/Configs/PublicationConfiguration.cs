@@ -28,10 +28,6 @@ public class PublicationConfiguration : IEntityTypeConfiguration<Publication>
         builder.Property(p => p.PdfFileName)
             .HasMaxLength(500);
 
-        builder.Property(p => p.CitationCount)
-            .IsRequired()
-            .HasDefaultValue(0);
-
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 

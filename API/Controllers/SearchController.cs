@@ -22,7 +22,7 @@ public class SearchController(ISearchService searchService) : ControllerBase
             return BadRequest(new { error = "Query parameter 'q' is required." });
 
         if (page < 1) page = 1;
-        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        if (pageSize < 1 || pageSize > 20) pageSize = 20;
 
         var filters = new SearchFilters(yearFrom, yearTo, authors, keywords);
         var (items, total) = await searchService.SearchAsync(q, filters, page, pageSize);

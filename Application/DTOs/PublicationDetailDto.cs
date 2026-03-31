@@ -9,7 +9,6 @@ public class PublicationDetailDto
     public string? Keywords { get; set; }
     public int? Year { get; set; }
     public string? DOI { get; set; }
-    public int CitationCount { get; set; }
     public string? PdfFileName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime LastModified { get; set; }

@@ -29,7 +29,6 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
             DOI           = "10.9999/updated",
             Abstract      = "New abstract",
             Body          = "New body text",
-            CitationCount = 42,
             Authors       = [new AuthorDto { FullName = authorName }]
         };
         var response = await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
@@ -43,7 +42,6 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         Assert.Equal("10.9999/updated", detail.DOI);
         Assert.Equal("New abstract", detail.Abstract);
         Assert.Equal("New body text", detail.Body);
-        Assert.Equal(42, detail.CitationCount);
     }
 
     [Fact]

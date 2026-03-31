@@ -39,7 +39,7 @@ BEGIN
 
     SELECT
         p.Id, p.Title, p.Abstract, p.Body, p.Keywords, p.Year, p.DOI,
-        p.CitationCount, p.PdfFileName, p.CreatedAt, p.LastModified,
+        p.PdfFileName, p.CreatedAt, p.LastModified,
         STUFF((
             SELECT ', ' + a.FullName
             FROM PublicationAuthors pa2

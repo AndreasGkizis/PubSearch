@@ -1,0 +1,5 @@
+GET https://localhost:7129/api/publications/keywords
+
+###
+
+GET https://localhost:7129/api/publications/authors

@@ -10,7 +10,7 @@ BEGIN
     -- Result set 1: publication row
     SELECT
         Id, Title, Abstract, Body, Keywords, Year, DOI,
-        CitationCount, PdfFileName, CreatedAt, LastModified
+        PdfFileName, CreatedAt, LastModified
     FROM Publications
     WHERE Id = @Id;
 
