@@ -10,4 +10,5 @@ public interface IAuthorRepository
     Task UpdateAsync(Author author);
     Task DeleteAsync(int id);
     Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync();
+    Task<IEnumerable<Author>> SearchAsync(string query, int limit);
 }

@@ -2,9 +2,6 @@ TODO:
     1. additional filters
         language
         publication type ( journal , book, conference paper, etc)
-        
-
-    1. edit authors and keywords
     1. add typsense for typo tolerant search [bonus]
     1. unit tests
     1. make year a slider

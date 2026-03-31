@@ -17,6 +17,17 @@ public class KeywordsController(KeywordService keywordService, CacheService cach
         return Ok(options);
     }
 
+    // GET /api/keywords/search?q=machine&limit=20
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        [FromQuery] string q = "",
+        [FromQuery] int limit = 20)
+    {
+        if (limit < 1 || limit > 100) limit = 20;
+        var items = await keywordService.SearchAsync(q, limit);
+        return Ok(items);
+    }
+
     // GET /api/keywords?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetAll(

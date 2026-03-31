@@ -17,6 +17,17 @@ public class AuthorsController(AuthorService authorService, CacheService cacheSe
         return Ok(options);
     }
 
+    // GET /api/authors/search?q=john&limit=20
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        [FromQuery] string q = "",
+        [FromQuery] int limit = 20)
+    {
+        if (limit < 1 || limit > 100) limit = 20;
+        var items = await authorService.SearchAsync(q, limit);
+        return Ok(items);
+    }
+
     // GET /api/authors?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetAll(

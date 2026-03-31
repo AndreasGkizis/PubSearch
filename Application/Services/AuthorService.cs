@@ -47,6 +47,12 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
         await cacheService.RefreshAuthorFilterOptionsAsync();
     }
 
+    public async Task<IEnumerable<AuthorManagementDto>> SearchAsync(string query, int limit)
+    {
+        var items = await repository.SearchAsync(query, limit);
+        return items.Select(ToDto);
+    }
+
     private static AuthorManagementDto ToDto(Author a) => new()
     {
         Id = a.Id,

@@ -86,4 +86,20 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
             .ToListAsync();
         return results.Select(x => (x.Name, x.Count));
     }
+
+    public async Task<IEnumerable<Keyword>> SearchAsync(string query, int limit)
+    {
+        return await context.Keywords
+            .AsNoTracking()
+            .Where(k => k.Value.ToLower().Contains(query.ToLower()))
+            .OrderBy(k => k.Value)
+            .Take(limit)
+            .Select(k => new Keyword
+            {
+                Id = k.Id,
+                Value = k.Value,
+                PublicationCount = k.Publications.Count
+            })
+            .ToListAsync();
+    }
 }

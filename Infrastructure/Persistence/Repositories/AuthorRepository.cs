@@ -93,4 +93,25 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
             .ToListAsync();
         return results.Select(x => (x.Name, x.Count));
     }
+
+    public async Task<IEnumerable<Author>> SearchAsync(string query, int limit)
+    {
+        var q = query.ToLower();
+        return await context.Authors
+            .AsNoTracking()
+            .Where(a => (a.FirstName + " " + (a.MiddleName ?? "") + " " + a.LastName).ToLower().Contains(q)
+                     || a.Email != null && a.Email.ToLower().Contains(q))
+            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName)
+            .Take(limit)
+            .Select(a => new Author
+            {
+                Id = a.Id,
+                FirstName = a.FirstName,
+                MiddleName = a.MiddleName,
+                LastName = a.LastName,
+                Email = a.Email,
+                PublicationCount = a.Publications.Count
+            })
+            .ToListAsync();
+    }
 }

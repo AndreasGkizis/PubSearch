@@ -267,16 +267,106 @@
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1">Keywords <span class="font-normal text-gray-400">(comma-separated)</span></label>
-          <input type="text" x-model="form.keywords"
+        <!-- Keywords searchable dropdown -->
+        <div class="relative" @click.outside="kwDropdownOpen = false">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Keywords</label>
+          <!-- Selected keyword chips -->
+          <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="selectedKeywords.length > 0">
+            <template x-for="kw in selectedKeywords" :key="kw.id">
+              <span class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">
+                <span x-text="kw.value"></span>
+                <button type="button" @click="removeKeyword(kw.id)" class="hover:text-red-500 font-bold">&times;</button>
+              </span>
+            </template>
+          </div>
+          <!-- Search input -->
+          <input type="text" x-model="kwSearch" @input.debounce.300ms="searchKeywords()"
+            @focus="if(kwSearch.length > 0) kwDropdownOpen = true"
+            placeholder="Search keywords…"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          <!-- Dropdown results -->
+          <div x-show="kwDropdownOpen && (kwSearchResults.length > 0 || kwSearch.trim().length > 0)"
+               class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <template x-for="kw in kwSearchResults" :key="kw.id">
+              <button type="button" @click="selectKeyword(kw)"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 flex justify-between items-center"
+                :class="selectedKeywords.some(s => s.id === kw.id) ? 'opacity-40 pointer-events-none' : ''">
+                <span x-text="kw.value"></span>
+                <span class="text-xs text-gray-400" x-text="kw.publicationCount + ' pubs'"></span>
+              </button>
+            </template>
+            <!-- Create new keyword option -->
+            <button type="button"
+              x-show="kwSearch.trim().length > 0 && !kwSearchResults.some(k => k.value.toLowerCase() === kwSearch.trim().toLowerCase())"
+              @click="createAndSelectKeyword()"
+              class="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 border-t border-gray-100 font-medium">
+              + Create "<span x-text="kwSearch.trim()"></span>"
+            </button>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1">Authors <span class="font-normal text-gray-400">(one per line, optionally email: Name &lt;email&gt;)</span></label>
-          <textarea x-model="form.authorsText" rows="3"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-400 focus:outline-none"></textarea>
+        <!-- Authors searchable dropdown -->
+        <div class="relative" @click.outside="authorDropdownOpen = false; showInlineAuthorForm = false">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Authors</label>
+          <!-- Selected author chips -->
+          <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="selectedAuthors.length > 0">
+            <template x-for="a in selectedAuthors" :key="a.id">
+              <span class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">
+                <span x-text="[a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')"></span>
+                <button type="button" @click="removeAuthor(a.id)" class="hover:text-red-500 font-bold">&times;</button>
+              </span>
+            </template>
+          </div>
+          <!-- Search input -->
+          <input type="text" x-model="authorSearch" @input.debounce.300ms="searchAuthors()"
+            @focus="if(authorSearch.length > 0) authorDropdownOpen = true"
+            placeholder="Search authors…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          <!-- Dropdown results -->
+          <div x-show="authorDropdownOpen && (authorSearchResults.length > 0 || authorSearch.trim().length > 0)"
+               class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+            <template x-for="a in authorSearchResults" :key="a.id">
+              <button type="button" @click="selectAuthor(a)"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 flex justify-between items-center"
+                :class="selectedAuthors.some(s => s.id === a.id) ? 'opacity-40 pointer-events-none' : ''">
+                <span>
+                  <span x-text="[a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')"></span>
+                  <span x-show="a.email" class="text-gray-400 text-xs ml-1" x-text="'<' + a.email + '>'"></span>
+                </span>
+                <span class="text-xs text-gray-400" x-text="a.publicationCount + ' pubs'"></span>
+              </button>
+            </template>
+            <!-- Create new author option -->
+            <button type="button"
+              x-show="authorSearch.trim().length > 0 && !showInlineAuthorForm"
+              @click="showInlineAuthorForm = true"
+              class="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 border-t border-gray-100 font-medium">
+              + Create new author
+            </button>
+            <!-- Inline author creation form -->
+            <div x-show="showInlineAuthorForm" class="border-t border-gray-100 p-3 bg-gray-50 space-y-2">
+              <p class="text-xs font-semibold text-gray-500">New Author</p>
+              <div class="grid grid-cols-3 gap-2">
+                <input type="text" x-model="inlineAuthor.firstName" placeholder="First *"
+                  class="border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-400 focus:outline-none" />
+                <input type="text" x-model="inlineAuthor.middleName" placeholder="Middle"
+                  class="border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-400 focus:outline-none" />
+                <input type="text" x-model="inlineAuthor.lastName" placeholder="Last *"
+                  class="border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-400 focus:outline-none" />
+              </div>
+              <input type="email" x-model="inlineAuthor.email" placeholder="Email (optional)"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-400 focus:outline-none" />
+              <div x-show="inlineAuthorError" class="text-xs text-red-500" x-text="inlineAuthorError"></div>
+              <div class="flex justify-end gap-2">
+                <button type="button" @click="showInlineAuthorForm = false; inlineAuthorError = null"
+                  class="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100">Cancel</button>
+                <button type="button" @click="createAndSelectAuthor()" :disabled="creatingInlineAuthor"
+                  class="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+                  <span x-text="creatingInlineAuthor ? 'Creating…' : 'Create & Add'"></span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -480,6 +570,21 @@
         uploadingPdf: false,
         uploadError: null,
 
+        // ── Searchable dropdown state ──
+        selectedKeywords: [],
+        kwSearch: '',
+        kwSearchResults: [],
+        kwDropdownOpen: false,
+
+        selectedAuthors: [],
+        authorSearch: '',
+        authorSearchResults: [],
+        authorDropdownOpen: false,
+        showInlineAuthorForm: false,
+        inlineAuthor: { firstName: '', middleName: '', lastName: '', email: '' },
+        inlineAuthorError: null,
+        creatingInlineAuthor: false,
+
         // ── Authors state ──
         authorsList: [],
         authorsTotal: 0,
@@ -540,6 +645,17 @@
         openNew() {
           this.form = { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
                         abstract: '', body: '', pdfFileName: '' };
+          this.selectedKeywords = [];
+          this.kwSearch = '';
+          this.kwSearchResults = [];
+          this.kwDropdownOpen = false;
+          this.selectedAuthors = [];
+          this.authorSearch = '';
+          this.authorSearchResults = [];
+          this.authorDropdownOpen = false;
+          this.showInlineAuthorForm = false;
+          this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
+          this.inlineAuthorError = null;
           this.formError  = null;
           this.uploadError = null;
           this.showModal  = true;
@@ -556,15 +672,54 @@
               year: pub.year ?? null,
               doi: pub.doi ?? '',
               keywords: pub.keywords ?? '',
-              authorsText: (pub.authors || []).map(a => {
-                const name = [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
-                return a.email ? `${name} <${a.email}>` : name;
-              }).join('\n'),
+              authorsText: '',
               authorObjects: pub.authors || [],
               abstract: pub.abstract ?? '',
               body: pub.body ?? '',
               pdfFileName: pub.pdfFileName ?? ''
             };
+            // Populate selected authors from publication data
+            this.selectedAuthors = (pub.authors || []).map(a => ({
+              id: a.id,
+              firstName: a.firstName,
+              middleName: a.middleName,
+              lastName: a.lastName,
+              email: a.email,
+              publicationCount: 0
+            }));
+            this.authorSearch = '';
+            this.authorSearchResults = [];
+            this.authorDropdownOpen = false;
+            this.showInlineAuthorForm = false;
+            this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
+            this.inlineAuthorError = null;
+            // Populate selected keywords from comma-separated string
+            if (pub.keywords) {
+              this.selectedKeywords = pub.keywords.split(',').map((v, i) => ({
+                id: -(i + 1),  // temporary negative ID; will be resolved on save
+                value: v.trim(),
+                publicationCount: 0
+              })).filter(k => k.value.length > 0);
+              // Try to resolve real IDs by searching each
+              for (let i = 0; i < this.selectedKeywords.length; i++) {
+                try {
+                  const sr = await fetch(`/api/keywords/search?q=${encodeURIComponent(this.selectedKeywords[i].value)}&limit=5`);
+                  if (sr.ok) {
+                    const results = await sr.json();
+                    const exact = results.find(r => r.value.toLowerCase() === this.selectedKeywords[i].value.toLowerCase());
+                    if (exact) {
+                      this.selectedKeywords[i].id = exact.id;
+                      this.selectedKeywords[i].publicationCount = exact.publicationCount;
+                    }
+                  }
+                } catch {}
+              }
+            } else {
+              this.selectedKeywords = [];
+            }
+            this.kwSearch = '';
+            this.kwSearchResults = [];
+            this.kwDropdownOpen = false;
             this.formError  = null;
             this.uploadError = null;
             this.showModal  = true;
@@ -595,25 +750,130 @@
           }
         },
 
-        parseAuthors(text) {
-          const saved = this.form.authorObjects || [];
-          return text.split('\n').map(line => {
-            const m = line.match(/^(.+?)\s*<(.+?)>\s*$/);
-            const fullName = m ? m[1].trim() : line.trim();
-            const email = m ? m[2].trim() : null;
-            if (!fullName) return null;
-            const parts = fullName.split(/\s+/);
-            let firstName, middleName, lastName;
-            if (parts.length === 1) {
-              firstName = parts[0]; middleName = null; lastName = '';
-            } else if (parts.length === 2) {
-              firstName = parts[0]; middleName = null; lastName = parts[1];
-            } else {
-              firstName = parts[0]; lastName = parts[parts.length - 1]; middleName = parts.slice(1, -1).join(' ');
+        // ── Keyword search & select helpers ──────────────────────────────
+
+        async searchKeywords() {
+          const q = this.kwSearch.trim();
+          if (q.length === 0) { this.kwSearchResults = []; this.kwDropdownOpen = false; return; }
+          try {
+            const res = await fetch(`/api/keywords/search?q=${encodeURIComponent(q)}&limit=20`);
+            if (res.ok) this.kwSearchResults = await res.json();
+          } catch { this.kwSearchResults = []; }
+          this.kwDropdownOpen = true;
+        },
+
+        selectKeyword(kw) {
+          if (!this.selectedKeywords.some(s => s.id === kw.id)) {
+            this.selectedKeywords.push({ ...kw });
+          }
+          this.kwSearch = '';
+          this.kwSearchResults = [];
+          this.kwDropdownOpen = false;
+        },
+
+        removeKeyword(id) {
+          this.selectedKeywords = this.selectedKeywords.filter(k => k.id !== id);
+        },
+
+        async createAndSelectKeyword() {
+          const value = this.kwSearch.trim();
+          if (!value) return;
+          try {
+            const res = await fetch('/api/keywords', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.selectedKeywords.push({ id: data.id, value, publicationCount: 0 });
+              this.kwSearch = '';
+              this.kwSearchResults = [];
+              this.kwDropdownOpen = false;
+            } else if (res.status === 500) {
+              // Keyword might already exist (duplicate); try searching for it
+              const sr = await fetch(`/api/keywords/search?q=${encodeURIComponent(value)}&limit=5`);
+              if (sr.ok) {
+                const results = await sr.json();
+                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
+                if (exact && !this.selectedKeywords.some(s => s.id === exact.id)) {
+                  this.selectedKeywords.push(exact);
+                  this.kwSearch = '';
+                  this.kwSearchResults = [];
+                  this.kwDropdownOpen = false;
+                }
+              }
             }
-            const existing = saved.find(a => a.firstName === firstName && a.lastName === lastName && (a.middleName || null) === (middleName || null));
-            return { id: existing?.id ?? 0, firstName, middleName: middleName || null, lastName, email };
-          }).filter(Boolean);
+          } catch {}
+        },
+
+        // ── Author search & select helpers ────────────────────────────────
+
+        async searchAuthors() {
+          const q = this.authorSearch.trim();
+          if (q.length === 0) { this.authorSearchResults = []; this.authorDropdownOpen = false; return; }
+          try {
+            const res = await fetch(`/api/authors/search?q=${encodeURIComponent(q)}&limit=20`);
+            if (res.ok) this.authorSearchResults = await res.json();
+          } catch { this.authorSearchResults = []; }
+          this.authorDropdownOpen = true;
+        },
+
+        selectAuthor(a) {
+          if (!this.selectedAuthors.some(s => s.id === a.id)) {
+            this.selectedAuthors.push({ ...a });
+          }
+          this.authorSearch = '';
+          this.authorSearchResults = [];
+          this.authorDropdownOpen = false;
+          this.showInlineAuthorForm = false;
+        },
+
+        removeAuthor(id) {
+          this.selectedAuthors = this.selectedAuthors.filter(a => a.id !== id);
+        },
+
+        async createAndSelectAuthor() {
+          this.inlineAuthorError = null;
+          if (!this.inlineAuthor.firstName?.trim() || !this.inlineAuthor.lastName?.trim()) {
+            this.inlineAuthorError = 'First name and last name are required.';
+            return;
+          }
+          this.creatingInlineAuthor = true;
+          try {
+            const payload = {
+              firstName: this.inlineAuthor.firstName.trim(),
+              middleName: this.inlineAuthor.middleName?.trim() || null,
+              lastName: this.inlineAuthor.lastName.trim(),
+              email: this.inlineAuthor.email?.trim() || null
+            };
+            const res = await fetch('/api/authors', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.selectedAuthors.push({
+                id: data.id,
+                firstName: payload.firstName,
+                middleName: payload.middleName,
+                lastName: payload.lastName,
+                email: payload.email,
+                publicationCount: 0
+              });
+              this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
+              this.showInlineAuthorForm = false;
+              this.authorSearch = '';
+              this.authorSearchResults = [];
+              this.authorDropdownOpen = false;
+            } else {
+              const err = await res.json().catch(() => ({}));
+              this.inlineAuthorError = err?.detail || 'Failed to create author.';
+            }
+          } catch {
+            this.inlineAuthorError = 'Network error.';
+          } finally { this.creatingInlineAuthor = false; }
         },
 
         async saveForm() {
@@ -623,11 +883,17 @@
             title:         this.form.title,
             year:          this.form.year || null,
             doi:           this.form.doi  || null,
-            keywords:      this.form.keywords || null,
+            keywords:      this.selectedKeywords.map(k => k.value).join(', ') || null,
             abstract:      this.form.abstract || null,
             body:          this.form.body || null,
             pdfFileName:   this.form.pdfFileName || null,
-            authors:       this.parseAuthors(this.form.authorsText)
+            authors:       this.selectedAuthors.map(a => ({
+              id: a.id,
+              firstName: a.firstName,
+              middleName: a.middleName || null,
+              lastName: a.lastName,
+              email: a.email || null
+            }))
           };
           try {
             const url    = this.form.id ? `/api/publications/${this.form.id}` : '/api/publications';

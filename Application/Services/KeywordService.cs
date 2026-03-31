@@ -54,6 +54,12 @@ public class KeywordService(IKeywordRepository repository, CacheService cacheSer
         await cacheService.RefreshKeywordFilterOptionsAsync();
     }
 
+    public async Task<IEnumerable<KeywordManagementDto>> SearchAsync(string query, int limit)
+    {
+        var items = await repository.SearchAsync(query, limit);
+        return items.Select(ToDto);
+    }
+
     private static KeywordManagementDto ToDto(Keyword k) => new()
     {
         Id = k.Id,
