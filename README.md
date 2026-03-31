@@ -1,6 +1,24 @@
 # Research Publications Search Engine
 
-A .NET 10 DDD web application for managing and searching academic publications, backed by MSSQL and served with a lightweight Alpine.js + Tailwind frontend.
+A .NET 10 clean-architecture web application for managing and searching academic publications, backed by SQL Server and served with a lightweight Alpine.js + Tailwind CSS frontend.
+
+---
+
+## Architecture
+
+```
+Domain (no dependencies)
+  └── Application (→ Domain)
+        └── Infrastructure (→ Domain + Application)
+              └── API (→ Application + Infrastructure)
+```
+
+| Layer | Responsibility |
+|-------|---------------|
+| **Domain** | Entities (`Publication`, `Author`, `Keyword`), repository interfaces, value objects |
+| **Application** | Services, DTOs, business logic, search interface |
+| **Infrastructure** | EF Core DbContext & migrations, repository implementations, search service, file storage, database seeder |
+| **API** | Controllers, middleware, static frontend (`wwwroot/`) |
 
 ---
 
@@ -10,94 +28,155 @@ A .NET 10 DDD web application for managing and searching academic publications, 
 |------|---------|
 | .NET SDK | 10.0+ |
 | Docker Desktop | Latest |
-| SQL client (optional) | e.g. `sqlcmd`, Azure Data Studio, DBeaver |
 
 ---
 
 ## Quick Start
 
-### 1. Start the MSSQL container
+### 1. Start the SQL Server container
 
 ```bash
 docker compose up -d
 ```
 
-Wait ~15 seconds for SQL Server to become healthy before running scripts.
+This starts a SQL Server 2022 instance on `localhost:1433` with full-text search enabled.
+
+### 2. Run the API
+
+```bash
+dotnet run --project API
+```
+
+On startup the application will automatically:
+- Apply EF Core migrations to create/update the database schema
+- Seed the database with **50,000 publications**, **1,000 authors**, and **25 keywords** (via [Bogus](https://github.com/bchavez/Bogus) with a fixed seed — skipped if data already exists)
+- Create the PDF storage directory if configured
+
+Then open [https://localhost:5001](https://localhost:5001) (or the port shown in console output).
 
 ---
 
-### 2. Run Schema Scripts
+## Features
 
-Connect to `localhost,1433` with username `sa` / password `YourStrong!Passw0rd` and execute in order:
+### Public Frontend (`index.html`)
+- Full-text search with debounced input
+- Filter sidebar: year range, searchable keyword checkboxes, searchable author checkboxes
+- Publication cards with title, authors, year, keyword tags, abstract snippet
+- Single publication detail view with full body text, DOI links, and PDF download
+- Pagination
 
-```bash
-# Using sqlcmd (adjust path as needed)
-sqlcmd -S localhost,1433 -U sa -P "YourStrong!Passw0rd" -i Infrastructure/Persistence/Scripts/Schema/001_CreateTables.sql
-```
+### Admin Panel (`admin.html`)
+- **Publications** — Create, edit, delete publications with title, year, DOI, abstract, body, keywords, authors, and PDF upload (50 MB limit)
+- **Authors** — CRUD with full name, first/last name, email; shows publication count
+- **Keywords** — CRUD with duplicate detection; shows publication count
+- Toast notifications, delete confirmation modals, pagination on all tabs
 
-Then create the full-text index. First find the primary key constraint name:
+### API Endpoints
 
-```sql
-USE ResearchPublications;
-SELECT name FROM sys.indexes
-WHERE object_id = OBJECT_ID('Publications') AND is_primary_key = 1;
-```
-
-Update the `KEY INDEX` value in `002_FullTextIndex.sql` if needed, then run:
-
-```bash
-sqlcmd -S localhost,1433 -U sa -P "YourStrong!Passw0rd" -i Infrastructure/Persistence/Scripts/Schema/002_FullTextIndex.sql
-```
-
-> **Tip:** The dynamic block at the bottom of `002_FullTextIndex.sql` can create the index without needing the exact name — just uncomment it.
-
----
-
-### 3. Run Stored Procedures
-
-Execute each file in `Infrastructure/Persistence/Scripts/StoredProcedures/`:
-
-```bash
-for f in Infrastructure/Persistence/Scripts/StoredProcedures/*.sql; do
-  sqlcmd -S localhost,1433 -U sa -P "YourStrong!Passw0rd" -i "$f"
-done
-```
-
-Or on Windows PowerShell:
-
-```powershell
-Get-ChildItem Infrastructure\Persistence\Scripts\StoredProcedures\*.sql | ForEach-Object {
-    sqlcmd -S localhost,1433 -U sa -P "YourStrong!Passw0rd" -i $_.FullName
-}
-```
-
-> **Note:** `sp_CreatePublication` and `sp_UpdatePublication` require `dbo.AuthorTableType` to exist first — this is created by `sp_CreatePublication.sql` automatically.
+| Route | Verbs | Description |
+|-------|-------|-------------|
+| `api/publications` | GET, POST | List (paged, filterable) / Create |
+| `api/publications/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
+| `api/publications/authors` | GET | All author names (cached 5 min) |
+| `api/publications/keywords` | GET | All keyword values (cached 5 min) |
+| `api/publications/{id}/download` | GET | Download PDF |
+| `api/publications/upload` | POST | Upload PDF |
+| `api/authors` | GET, POST | List (paged) / Create |
+| `api/authors/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
+| `api/keywords` | GET, POST | List (paged) / Create |
+| `api/keywords/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
+| `api/search` | GET | Search with query, pagination, and year/author/keyword filters |
 
 ---
 
-### 4. Seed the Database
+## Configuration
 
-```bash
-sqlcmd -S localhost,1433 -U sa -P "YourStrong!Passw0rd" -i Infrastructure/Persistence/Scripts/Seed/SeedData.sql
-```
-
-This inserts 10 AI/ML publications (5 with `PdfFileName` set, 5 with `NULL`) and links them to authors.
-
----
-
-### 5. Configure PDF Storage (optional)
-
-To serve real PDFs, place them in `C:\Publications\PDFs\` (or change the path in `API/appsettings.Development.json`):
+Development settings live in `API/appsettings.Development.json`:
 
 ```json
 {
   "PdfStorage": {
-    "Path": "C:\\Publications\\PDFs"
+    "Path": "../pdfs"
+  },
+  "SqlSettings": {
+    "Server": "localhost",
+    "Port": 1433,
+    "DbName": "ResearchPublications",
+    "UserId": "sa",
+    "Password": "YourStrong!Passw0rd"
   }
 }
 ```
 
-File names must match the `PdfFileName` column values in the database (e.g. `paper-01.pdf`).
+PDF files are stored in the `pdfs/` directory at the repo root by default.
+
+---
+
+## EF Core Migrations
+
+The app uses EF Core code-first migrations. To add a new migration:
+
+```bash
+dotnet ef migrations add <MigrationName> --project Infrastructure --startup-project API --output-dir Persistence/Migrations
+```
+
+Migrations are applied automatically on startup.
+
+---
+
+## Tests
+
+Integration tests use [Testcontainers](https://dotnet.testcontainers.org/) to spin up a real SQL Server instance in Docker.
+
+```bash
+dotnet test Tests/IntegrationTests
+```
+
+Test coverage:
+- **PublicationCrudTests** — Create, read, list (paged), delete
+- **PublicationEditTests** — Update fields, add/remove/change keywords, keyword deduplication, author deduplication
+- **AuthorCrudTests** — Full CRUD, unlinking from publications on delete, publication count
+- **KeywordCrudTests** — Full CRUD, duplicate detection, unlinking from publications on delete
+
+---
+
+## Project Structure
+
+```
+├── API/                          # ASP.NET Core Web API
+│   ├── Controllers/              # Publications, Authors, Keywords, Search
+│   ├── Middleware/                # Global exception handling
+│   └── wwwroot/                  # Alpine.js + Tailwind CSS frontend
+├── Application/                  # Business logic layer
+│   ├── DTOs/                     # Data transfer objects
+│   ├── Interfaces/               # Service contracts
+│   └── Services/                 # Publication, Author, Keyword services
+├── Domain/                       # Core domain
+│   ├── Entities/                 # Publication, Author, Keyword
+│   ├── Interfaces/               # Repository contracts
+│   └── ValueObjects/             # Keyword value object
+├── Infrastructure/               # Data access & external services
+│   ├── Persistence/              # DbContext, configs, migrations, repositories, seeder
+│   ├── Search/                   # MSSQL search service
+│   ├── Files/                    # Local PDF file service
+│   └── Settings/                 # SqlSettings
+├── Tests/
+│   └── IntegrationTests/         # xUnit + Testcontainers
+├── pdfs/                         # PDF file storage
+├── docker-compose.yml            # SQL Server 2022 container
+└── ResearchPublications.slnx     # Solution file
+```
+
+---
+
+## Tech Stack
+
+- **.NET 10** / ASP.NET Core
+- **EF Core 10** (code-first, SQL Server provider)
+- **SQL Server 2022** (Docker)
+- **Alpine.js** + **Tailwind CSS** (CDN, no build step)
+- **Bogus** (database seeding)
+- **xUnit** + **Testcontainers** (integration tests)
 
 ---
 
