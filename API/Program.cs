@@ -12,6 +12,8 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 builder.Services.AddControllers();
 builder.Services.AddScoped<PublicationService>();
+builder.Services.AddScoped<AuthorService>();
+builder.Services.AddScoped<KeywordService>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();

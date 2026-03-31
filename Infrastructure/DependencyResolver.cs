@@ -26,6 +26,8 @@ public static class DependencyResolver
                        .MigrationsHistoryTable("__EFMigrationsHistory")));
 
         services.AddScoped<IPublicationRepository, PublicationRepository>();
+        services.AddScoped<IAuthorRepository, AuthorRepository>();
+        services.AddScoped<IKeywordRepository, KeywordRepository>();
         services.AddScoped<ISearchService, MssqlSearchService>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();

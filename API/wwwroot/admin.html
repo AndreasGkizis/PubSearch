@@ -13,9 +13,28 @@
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
       <a href="index.html" class="text-indigo-600 hover:underline text-sm">← Back to search</a>
       <h1 class="text-xl font-bold text-indigo-700">Admin</h1>
-      <button @click="openNew()"
+      <nav class="flex gap-1 ml-4">
+        <button @click="switchTab('publications')"
+          :class="activeTab === 'publications' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Publications</button>
+        <button @click="switchTab('authors')"
+          :class="activeTab === 'authors' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Authors</button>
+        <button @click="switchTab('keywords')"
+          :class="activeTab === 'keywords' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Keywords</button>
+      </nav>
+      <button x-show="activeTab === 'publications'" @click="openNew()"
         class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
         + Add Publication
+      </button>
+      <button x-show="activeTab === 'authors'" @click="openNewAuthor()"
+        class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+        + Add Author
+      </button>
+      <button x-show="activeTab === 'keywords'" @click="openNewKeyword()"
+        class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+        + Add Keyword
       </button>
     </div>
   </header>
@@ -35,65 +54,183 @@
          class="fixed bottom-6 right-6 bg-green-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg z-50"
          x-text="toast"></div>
 
-    <!-- Status bar + top pagination -->
-    <div x-show="!loading" class="flex items-center mb-4">
-      <span class="text-xs text-gray-400" x-text="'Found ' + total + ' publications'"></span>
-      <div x-show="totalPages > 1" class="ml-auto flex items-center gap-2">
-        <button @click="changePage(page - 1)" :disabled="page <= 1"
-          class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-        <span class="text-xs text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
-        <button @click="changePage(page + 1)" :disabled="page >= totalPages"
-          class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+    <!-- ═══════════════ PUBLICATIONS TAB ═══════════════ -->
+    <div x-show="activeTab === 'publications' && !loading">
+
+      <!-- Status bar + top pagination -->
+      <div class="flex items-center mb-4">
+        <span class="text-xs text-gray-400" x-text="'Found ' + total + ' publications'"></span>
+        <div x-show="totalPages > 1" class="ml-auto flex items-center gap-2">
+          <button @click="changePage(page - 1)" :disabled="page <= 1"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+          <span class="text-xs text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
+          <button @click="changePage(page + 1)" :disabled="page >= totalPages"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Table -->
-    <div x-show="!loading" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-          <tr>
-            <th class="px-4 py-3 text-left">ID</th>
-            <th class="px-4 py-3 text-left">Title</th>
-            <th class="px-4 py-3 text-left">Authors</th>
-            <th class="px-4 py-3 text-center">Year</th>
-            <th class="px-4 py-3 text-center">PDF</th>
-            <th class="px-4 py-3 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="pub in publications" :key="pub.id">
-            <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
-              <td class="px-4 py-3 text-gray-400" x-text="pub.id"></td>
-              <td class="px-4 py-3 font-medium text-gray-800 max-w-xs truncate" x-text="pub.title"></td>
-              <td class="px-4 py-3 text-gray-500 max-w-xs truncate" x-text="(pub.authors || []).join(', ')"></td>
-              <td class="px-4 py-3 text-center text-gray-500" x-text="pub.year ?? '—'"></td>
-              <td class="px-4 py-3 text-center">
-                <span x-show="pub.pdfFileName" class="text-green-600 text-xs font-medium">✓</span>
-                <span x-show="!pub.pdfFileName" class="text-gray-300 text-xs">—</span>
-              </td>
-              <td class="px-4 py-3 text-center flex justify-center gap-2">
-                <button @click="openEdit(pub.id)"
-                  class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded hover:bg-indigo-100">Edit</button>
-                <button @click="confirmDelete(pub)"
-                  class="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded hover:bg-red-100">Delete</button>
-              </td>
+      <!-- Table -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-left">ID</th>
+              <th class="px-4 py-3 text-left">Title</th>
+              <th class="px-4 py-3 text-left">Authors</th>
+              <th class="px-4 py-3 text-center">Year</th>
+              <th class="px-4 py-3 text-center">PDF</th>
+              <th class="px-4 py-3 text-center">Actions</th>
             </tr>
-          </template>
-          <tr x-show="publications.length === 0">
-            <td colspan="6" class="px-4 py-8 text-center text-gray-400">No publications found.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <template x-for="pub in publications" :key="pub.id">
+              <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 text-gray-400" x-text="pub.id"></td>
+                <td class="px-4 py-3 font-medium text-gray-800 max-w-xs truncate" x-text="pub.title"></td>
+                <td class="px-4 py-3 text-gray-500 max-w-xs truncate" x-text="(pub.authors || []).join(', ')"></td>
+                <td class="px-4 py-3 text-center text-gray-500" x-text="pub.year ?? '—'"></td>
+                <td class="px-4 py-3 text-center">
+                  <span x-show="pub.pdfFileName" class="text-green-600 text-xs font-medium">✓</span>
+                  <span x-show="!pub.pdfFileName" class="text-gray-300 text-xs">—</span>
+                </td>
+                <td class="px-4 py-3 text-center flex justify-center gap-2">
+                  <button @click="openEdit(pub.id)"
+                    class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded hover:bg-indigo-100">Edit</button>
+                  <button @click="confirmDelete(pub)"
+                    class="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded hover:bg-red-100">Delete</button>
+                </td>
+              </tr>
+            </template>
+            <tr x-show="publications.length === 0">
+              <td colspan="6" class="px-4 py-8 text-center text-gray-400">No publications found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- Pagination -->
-    <div x-show="!loading && totalPages > 1" class="flex justify-center gap-2 mt-6">
-      <button @click="changePage(page - 1)" :disabled="page <= 1"
-        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-      <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
-      <button @click="changePage(page + 1)" :disabled="page >= totalPages"
-        class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
-    </div>
+      <!-- Pagination -->
+      <div x-show="totalPages > 1" class="flex justify-center gap-2 mt-6">
+        <button @click="changePage(page - 1)" :disabled="page <= 1"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+        <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + page + ' / ' + totalPages"></span>
+        <button @click="changePage(page + 1)" :disabled="page >= totalPages"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+      </div>
+
+    </div><!-- /publications tab -->
+
+    <!-- ═══════════════ AUTHORS TAB ═══════════════ -->
+    <div x-show="activeTab === 'authors' && !loading">
+
+      <div class="flex items-center mb-4">
+        <span class="text-xs text-gray-400" x-text="'Found ' + authorsTotal + ' authors'"></span>
+        <div x-show="authorsTotalPages > 1" class="ml-auto flex items-center gap-2">
+          <button @click="changeAuthorsPage(authorsPage - 1)" :disabled="authorsPage <= 1"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+          <span class="text-xs text-gray-500" x-text="'Page ' + authorsPage + ' / ' + authorsTotalPages"></span>
+          <button @click="changeAuthorsPage(authorsPage + 1)" :disabled="authorsPage >= authorsTotalPages"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-left">ID</th>
+              <th class="px-4 py-3 text-left">Full Name</th>
+              <th class="px-4 py-3 text-left">Email</th>
+              <th class="px-4 py-3 text-center">Publications</th>
+              <th class="px-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="author in authorsList" :key="author.id">
+              <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 text-gray-400" x-text="author.id"></td>
+                <td class="px-4 py-3 font-medium text-gray-800" x-text="author.fullName"></td>
+                <td class="px-4 py-3 text-gray-500" x-text="author.email || '—'"></td>
+                <td class="px-4 py-3 text-center text-gray-500" x-text="author.publicationCount"></td>
+                <td class="px-4 py-3 text-center flex justify-center gap-2">
+                  <button @click="openEditAuthor(author)"
+                    class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded hover:bg-indigo-100">Edit</button>
+                  <button @click="confirmDeleteAuthor(author)"
+                    class="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded hover:bg-red-100">Delete</button>
+                </td>
+              </tr>
+            </template>
+            <tr x-show="authorsList.length === 0">
+              <td colspan="5" class="px-4 py-8 text-center text-gray-400">No authors found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div x-show="authorsTotalPages > 1" class="flex justify-center gap-2 mt-6">
+        <button @click="changeAuthorsPage(authorsPage - 1)" :disabled="authorsPage <= 1"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+        <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + authorsPage + ' / ' + authorsTotalPages"></span>
+        <button @click="changeAuthorsPage(authorsPage + 1)" :disabled="authorsPage >= authorsTotalPages"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+      </div>
+
+    </div><!-- /authors tab -->
+
+    <!-- ═══════════════ KEYWORDS TAB ═══════════════ -->
+    <div x-show="activeTab === 'keywords' && !loading">
+
+      <div class="flex items-center mb-4">
+        <span class="text-xs text-gray-400" x-text="'Found ' + keywordsTotal + ' keywords'"></span>
+        <div x-show="keywordsTotalPages > 1" class="ml-auto flex items-center gap-2">
+          <button @click="changeKeywordsPage(keywordsPage - 1)" :disabled="keywordsPage <= 1"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+          <span class="text-xs text-gray-500" x-text="'Page ' + keywordsPage + ' / ' + keywordsTotalPages"></span>
+          <button @click="changeKeywordsPage(keywordsPage + 1)" :disabled="keywordsPage >= keywordsTotalPages"
+            class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-left">ID</th>
+              <th class="px-4 py-3 text-left">Value</th>
+              <th class="px-4 py-3 text-center">Publications</th>
+              <th class="px-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="kw in keywordsList" :key="kw.id">
+              <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 text-gray-400" x-text="kw.id"></td>
+                <td class="px-4 py-3 font-medium text-gray-800" x-text="kw.value"></td>
+                <td class="px-4 py-3 text-center text-gray-500" x-text="kw.publicationCount"></td>
+                <td class="px-4 py-3 text-center flex justify-center gap-2">
+                  <button @click="openEditKeyword(kw)"
+                    class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded hover:bg-indigo-100">Edit</button>
+                  <button @click="confirmDeleteKeyword(kw)"
+                    class="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded hover:bg-red-100">Delete</button>
+                </td>
+              </tr>
+            </template>
+            <tr x-show="keywordsList.length === 0">
+              <td colspan="4" class="px-4 py-8 text-center text-gray-400">No keywords found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div x-show="keywordsTotalPages > 1" class="flex justify-center gap-2 mt-6">
+        <button @click="changeKeywordsPage(keywordsPage - 1)" :disabled="keywordsPage <= 1"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+        <span class="px-3 py-1.5 text-sm text-gray-500" x-text="'Page ' + keywordsPage + ' / ' + keywordsTotalPages"></span>
+        <button @click="changeKeywordsPage(keywordsPage + 1)" :disabled="keywordsPage >= keywordsTotalPages"
+          class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+      </div>
+
+    </div><!-- /keywords tab -->
+
   </main>
 
   <!-- ── Add / Edit Modal ────────────────────────────────────────────────── -->
@@ -205,9 +342,127 @@
     </div>
   </div>
 
+  <!-- ── Author Add / Edit Modal ──────────────────────────────────────── -->
+  <div x-show="showAuthorModal" x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
+       @click.self="showAuthorModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 mb-10" @click.stop>
+      <h2 class="text-lg font-bold text-gray-800 mb-4"
+          x-text="authorForm.id ? 'Edit Author' : 'Add Author'"></h2>
+      <div x-show="authorFormError" class="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-600 mb-4" x-text="authorFormError"></div>
+      <form @submit.prevent="saveAuthor()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Full Name *</label>
+          <input type="text" x-model="authorForm.fullName" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">First Name</label>
+            <input type="text" x-model="authorForm.firstName"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Last Name</label>
+            <input type="text" x-model="authorForm.lastName"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+          <input type="email" x-model="authorForm.email"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+          <button type="button" @click="showAuthorModal = false"
+            class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button type="submit" :disabled="savingAuthor"
+            class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+            <span x-text="savingAuthor ? 'Saving…' : (authorForm.id ? 'Update' : 'Create')"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Author Delete Confirm Modal ──────────────────────────────────── -->
+  <div x-show="deleteAuthorTarget" x-transition
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="font-bold text-gray-800 mb-2">Delete Author?</h3>
+      <p class="text-sm text-gray-500 mb-1">
+        "<span x-text="deleteAuthorTarget?.fullName"></span>" will be permanently removed.
+      </p>
+      <p x-show="deleteAuthorTarget?.publicationCount > 0" class="text-xs text-amber-600 mb-4">
+        This author is linked to <span x-text="deleteAuthorTarget?.publicationCount"></span> publication(s). They will be unlinked.
+      </p>
+      <p x-show="!deleteAuthorTarget?.publicationCount" class="mb-4"></p>
+      <div class="flex justify-end gap-3">
+        <button @click="deleteAuthorTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+        <button @click="doDeleteAuthor()" :disabled="deletingAuthor"
+          class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+          <span x-text="deletingAuthor ? 'Deleting…' : 'Delete'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Keyword Add / Edit Modal ─────────────────────────────────────── -->
+  <div x-show="showKeywordModal" x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
+       @click.self="showKeywordModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 mb-10" @click.stop>
+      <h2 class="text-lg font-bold text-gray-800 mb-4"
+          x-text="keywordForm.id ? 'Edit Keyword' : 'Add Keyword'"></h2>
+      <div x-show="keywordFormError" class="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-600 mb-4" x-text="keywordFormError"></div>
+      <form @submit.prevent="saveKeyword()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Value *</label>
+          <input type="text" x-model="keywordForm.value" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+          <button type="button" @click="showKeywordModal = false"
+            class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button type="submit" :disabled="savingKeyword"
+            class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+            <span x-text="savingKeyword ? 'Saving…' : (keywordForm.id ? 'Update' : 'Create')"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Keyword Delete Confirm Modal ─────────────────────────────────── -->
+  <div x-show="deleteKeywordTarget" x-transition
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="font-bold text-gray-800 mb-2">Delete Keyword?</h3>
+      <p class="text-sm text-gray-500 mb-1">
+        "<span x-text="deleteKeywordTarget?.value"></span>" will be permanently removed.
+      </p>
+      <p x-show="deleteKeywordTarget?.publicationCount > 0" class="text-xs text-amber-600 mb-4">
+        This keyword is linked to <span x-text="deleteKeywordTarget?.publicationCount"></span> publication(s). They will be unlinked.
+      </p>
+      <p x-show="!deleteKeywordTarget?.publicationCount" class="mb-4"></p>
+      <div class="flex justify-end gap-3">
+        <button @click="deleteKeywordTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+        <button @click="doDeleteKeyword()" :disabled="deletingKeyword"
+          class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+          <span x-text="deletingKeyword ? 'Deleting…' : 'Delete'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function adminApp() {
       return {
+        activeTab: 'publications',
+
+        // ── Publications state ──
         publications: [],
         total: 0,
         page: 1,
@@ -225,9 +480,45 @@
         uploadingPdf: false,
         uploadError: null,
 
+        // ── Authors state ──
+        authorsList: [],
+        authorsTotal: 0,
+        authorsPage: 1,
+        authorsPageSize: 20,
+        showAuthorModal: false,
+        savingAuthor: false,
+        authorFormError: null,
+        deleteAuthorTarget: null,
+        deletingAuthor: false,
+        authorForm: { id: null, fullName: '', firstName: '', lastName: '', email: '' },
+
+        // ── Keywords state ──
+        keywordsList: [],
+        keywordsTotal: 0,
+        keywordsPage: 1,
+        keywordsPageSize: 20,
+        showKeywordModal: false,
+        savingKeyword: false,
+        keywordFormError: null,
+        deleteKeywordTarget: null,
+        deletingKeyword: false,
+        keywordForm: { id: null, value: '' },
+
         get totalPages() { return Math.max(1, Math.ceil(this.total / this.pageSize)); },
+        get authorsTotalPages() { return Math.max(1, Math.ceil(this.authorsTotal / this.authorsPageSize)); },
+        get keywordsTotalPages() { return Math.max(1, Math.ceil(this.keywordsTotal / this.keywordsPageSize)); },
 
         async init() { await this.loadAll(); },
+
+        async switchTab(tab) {
+          this.activeTab = tab;
+          this.loading = true;
+          try {
+            if (tab === 'publications') await this.loadAll();
+            else if (tab === 'authors') await this.loadAuthors();
+            else if (tab === 'keywords') await this.loadKeywords();
+          } finally { this.loading = false; }
+        },
 
         async loadAll() {
           this.loading = true;
@@ -357,6 +648,145 @@
         showToast(msg) {
           this.toast = msg;
           setTimeout(() => { this.toast = null; }, 3000);
+        },
+
+        // ── Authors CRUD ──────────────────────────────────────────────────
+
+        async loadAuthors() {
+          try {
+            const res = await fetch(`/api/authors?page=${this.authorsPage}&pageSize=${this.authorsPageSize}`);
+            const data = await res.json();
+            this.authorsList = data.items || [];
+            this.authorsTotal = data.total ?? 0;
+          } catch { this.authorsList = []; }
+        },
+
+        async changeAuthorsPage(p) {
+          if (p < 1 || p > this.authorsTotalPages) return;
+          this.authorsPage = p;
+          this.loading = true;
+          try { await this.loadAuthors(); } finally { this.loading = false; }
+        },
+
+        openNewAuthor() {
+          this.authorForm = { id: null, fullName: '', firstName: '', lastName: '', email: '' };
+          this.authorFormError = null;
+          this.showAuthorModal = true;
+        },
+
+        openEditAuthor(author) {
+          this.authorForm = {
+            id: author.id,
+            fullName: author.fullName ?? '',
+            firstName: author.firstName ?? '',
+            lastName: author.lastName ?? '',
+            email: author.email ?? ''
+          };
+          this.authorFormError = null;
+          this.showAuthorModal = true;
+        },
+
+        async saveAuthor() {
+          this.authorFormError = null;
+          this.savingAuthor = true;
+          const payload = {
+            fullName: this.authorForm.fullName,
+            firstName: this.authorForm.firstName || '',
+            lastName: this.authorForm.lastName || '',
+            email: this.authorForm.email || null
+          };
+          try {
+            const url = this.authorForm.id ? `/api/authors/${this.authorForm.id}` : '/api/authors';
+            const method = this.authorForm.id ? 'PUT' : 'POST';
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); this.authorFormError = err?.detail || 'Save failed.'; return; }
+            this.showToast(this.authorForm.id ? 'Author updated.' : 'Author created.');
+            this.showAuthorModal = false;
+            this.loading = true;
+            await this.loadAuthors();
+            this.loading = false;
+          } catch {
+            this.authorFormError = 'Network error — please try again.';
+          } finally { this.savingAuthor = false; }
+        },
+
+        confirmDeleteAuthor(author) { this.deleteAuthorTarget = author; },
+
+        async doDeleteAuthor() {
+          if (!this.deleteAuthorTarget) return;
+          this.deletingAuthor = true;
+          try {
+            await fetch(`/api/authors/${this.deleteAuthorTarget.id}`, { method: 'DELETE' });
+            this.showToast('Author deleted.');
+            this.deleteAuthorTarget = null;
+            this.loading = true;
+            await this.loadAuthors();
+            this.loading = false;
+          } catch {} finally { this.deletingAuthor = false; }
+        },
+
+        // ── Keywords CRUD ─────────────────────────────────────────────────
+
+        async loadKeywords() {
+          try {
+            const res = await fetch(`/api/keywords?page=${this.keywordsPage}&pageSize=${this.keywordsPageSize}`);
+            const data = await res.json();
+            this.keywordsList = data.items || [];
+            this.keywordsTotal = data.total ?? 0;
+          } catch { this.keywordsList = []; }
+        },
+
+        async changeKeywordsPage(p) {
+          if (p < 1 || p > this.keywordsTotalPages) return;
+          this.keywordsPage = p;
+          this.loading = true;
+          try { await this.loadKeywords(); } finally { this.loading = false; }
+        },
+
+        openNewKeyword() {
+          this.keywordForm = { id: null, value: '' };
+          this.keywordFormError = null;
+          this.showKeywordModal = true;
+        },
+
+        openEditKeyword(kw) {
+          this.keywordForm = { id: kw.id, value: kw.value ?? '' };
+          this.keywordFormError = null;
+          this.showKeywordModal = true;
+        },
+
+        async saveKeyword() {
+          this.keywordFormError = null;
+          this.savingKeyword = true;
+          const payload = { value: this.keywordForm.value };
+          try {
+            const url = this.keywordForm.id ? `/api/keywords/${this.keywordForm.id}` : '/api/keywords';
+            const method = this.keywordForm.id ? 'PUT' : 'POST';
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); this.keywordFormError = err?.detail || 'Save failed.'; return; }
+            this.showToast(this.keywordForm.id ? 'Keyword updated.' : 'Keyword created.');
+            this.showKeywordModal = false;
+            this.loading = true;
+            await this.loadKeywords();
+            this.loading = false;
+          } catch {
+            this.keywordFormError = 'Network error — please try again.';
+          } finally { this.savingKeyword = false; }
+        },
+
+        confirmDeleteKeyword(kw) { this.deleteKeywordTarget = kw; },
+
+        async doDeleteKeyword() {
+          if (!this.deleteKeywordTarget) return;
+          this.deletingKeyword = true;
+          try {
+            await fetch(`/api/keywords/${this.deleteKeywordTarget.id}`, { method: 'DELETE' });
+            this.showToast('Keyword deleted.');
+            this.deleteKeywordTarget = null;
+            this.loading = true;
+            await this.loadKeywords();
+            this.loading = false;
+          } catch {} finally { this.deletingKeyword = false; }
         }
       };
     }
