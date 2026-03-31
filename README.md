@@ -77,14 +77,14 @@ Then open [https://localhost:5001](https://localhost:5001) (or the port shown in
 |-------|-------|-------------|
 | `api/publications` | GET, POST | List (paged, filterable) / Create |
 | `api/publications/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
-| `api/publications/authors` | GET | All author names (cached 5 min) |
-| `api/publications/keywords` | GET | All keyword values (cached 5 min) |
 | `api/publications/{id}/download` | GET | Download PDF |
 | `api/publications/upload` | POST | Upload PDF |
 | `api/authors` | GET, POST | List (paged) / Create |
 | `api/authors/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
+| `api/authors/filter-options` | GET | Author names with publication counts (cached) |
 | `api/keywords` | GET, POST | List (paged) / Create |
 | `api/keywords/{id}` | GET, PUT, DELETE | Detail / Update / Delete |
+| `api/keywords/filter-options` | GET | Keyword values with publication counts (cached) |
 | `api/search` | GET | Search with query, pagination, and year/author/keyword filters |
 
 ---

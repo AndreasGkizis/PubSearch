@@ -160,21 +160,4 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
         }
     }
 
-    public async Task<IEnumerable<(string Name, int Count)>> GetAllAuthorsAsync()
-    {
-        var results = await context.Authors
-            .Select(a => new { Name = a.FullName, Count = a.Publications.Count })
-            .OrderBy(x => x.Name)
-            .ToListAsync();
-        return results.Select(x => (x.Name, x.Count));
-    }
-
-    public async Task<IEnumerable<(string Name, int Count)>> GetAllKeywordsAsync()
-    {
-        var results = await context.Keywords
-            .Select(k => new { Name = k.Value, Count = k.Publications.Count })
-            .OrderBy(x => x.Name)
-            .ToListAsync();
-        return results.Select(x => (x.Name, x.Count));
-    }
 }

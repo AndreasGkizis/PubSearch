@@ -81,4 +81,13 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
             await context.SaveChangesAsync();
         }
     }
+
+    public async Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync()
+    {
+        var results = await context.Authors
+            .Select(a => new { Name = a.FullName, Count = a.Publications.Count })
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+        return results.Select(x => (x.Name, x.Count));
+    }
 }

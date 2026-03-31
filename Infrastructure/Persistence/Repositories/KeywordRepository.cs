@@ -77,4 +77,13 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
             await context.SaveChangesAsync();
         }
     }
+
+    public async Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync()
+    {
+        var results = await context.Keywords
+            .Select(k => new { Name = k.Value, Count = k.Publications.Count })
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+        return results.Select(x => (x.Name, x.Count));
+    }
 }

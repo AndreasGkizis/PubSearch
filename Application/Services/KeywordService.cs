@@ -5,7 +5,7 @@ using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Application.Services;
 
-public class KeywordService(IKeywordRepository repository)
+public class KeywordService(IKeywordRepository repository, CacheService cacheService)
 {
     public async Task<(IEnumerable<KeywordManagementDto> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
     {
@@ -27,7 +27,9 @@ public class KeywordService(IKeywordRepository repository)
             throw new InvalidOperationException($"A keyword with value '{dto.Value}' already exists.");
 
         var entity = new Keyword { Value = dto.Value };
-        return await repository.CreateAsync(entity);
+        var id = await repository.CreateAsync(entity);
+        await cacheService.RefreshKeywordFilterOptionsAsync();
+        return id;
     }
 
     public async Task UpdateAsync(int id, KeywordManagementDto dto)
@@ -41,6 +43,7 @@ public class KeywordService(IKeywordRepository repository)
 
         var entity = new Keyword { Id = id, Value = dto.Value };
         await repository.UpdateAsync(entity);
+        await cacheService.RefreshKeywordFilterOptionsAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -48,6 +51,7 @@ public class KeywordService(IKeywordRepository repository)
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Keyword {id} was not found.");
         await repository.DeleteAsync(id);
+        await cacheService.RefreshKeywordFilterOptionsAsync();
     }
 
     private static KeywordManagementDto ToDto(Keyword k) => new()

@@ -15,8 +15,6 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
 
         var q = context.Publications
             .AsNoTracking()
-            .Include(p => p.Authors)
-            .Include(p => p.Keywords)
             .Where(p => p.Title.Contains(query));
 
         if (filters.YearFrom.HasValue)
@@ -32,28 +30,29 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
             q = q.Where(p => p.Keywords.Any(k => filters.Keywords.Contains(k.Value)));
 
         var total = await q.CountAsync();
-        var results = await q
+        var items = await q
             .OrderByDescending(p => p.LastModified)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(p => new SearchResultDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Authors = p.Authors.Select(a => a.FullName).ToList(),
+                Year = p.Year,
+                Keywords = p.Keywords.Any()
+                    ? string.Join(", ", p.Keywords.Select(k => k.Value))
+                    : null,
+                AbstractSnippet = p.Abstract != null && p.Abstract.Length > 200
+                    ? p.Abstract.Substring(0, 200) + "…"
+                    : p.Abstract,
+                PdfFileName = p.PdfFileName,
+                Rank = 1.0
+            })
             .ToListAsync();
 
-        var items = results.Select(p => new SearchResultDto
-        {
-            Id = p.Id,
-            Title = p.Title,
-            Authors = p.Authors.Select(a => a.FullName).ToList(),
-            Year = p.Year,
-            Keywords = p.Keywords.Count > 0
-                ? string.Join(", ", p.Keywords.Select(k => k.Value))
-                : null,
-            AbstractSnippet = p.Abstract is { Length: > 200 }
-                ? p.Abstract[..200] + "…"
-                : p.Abstract,
-            PdfFileName = p.PdfFileName,
-            Rank = 1.0
-        });
+        IEnumerable<SearchResultDto> enumerable = items;
 
-        return (items, total);
+        return (enumerable, total);
     }
 }

@@ -230,14 +230,17 @@
         },
 
         async init() {
-          await Promise.all([this.loadFacets(), this.loadAll()]);
+          // Load publications first so the user sees results immediately,
+          // then load filter options in the background.
+          await this.loadAll();
+          this.loadFilterOptions();
         },
 
-        async loadFacets() {
+        async loadFilterOptions() {
           try {
             const [authorsRes, keywordsRes] = await Promise.all([
-              fetch('/api/publications/authors'),
-              fetch('/api/publications/keywords')
+              fetch('/api/authors/filter-options'),
+              fetch('/api/keywords/filter-options')
             ]);
             this.availableAuthors  = await authorsRes.json();
             this.availableKeywords = await keywordsRes.json();

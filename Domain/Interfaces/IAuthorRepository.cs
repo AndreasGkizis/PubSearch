@@ -9,4 +9,5 @@ public interface IAuthorRepository
     Task<int> CreateAsync(Author author);
     Task UpdateAsync(Author author);
     Task DeleteAsync(int id);
+    Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync();
 }

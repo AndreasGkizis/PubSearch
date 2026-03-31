@@ -6,8 +6,17 @@ namespace ResearchPublications.API.Controllers;
 
 [ApiController]
 [Route("api/keywords")]
-public class KeywordsController(KeywordService keywordService) : ControllerBase
+public class KeywordsController(KeywordService keywordService, CacheService cacheService) : ControllerBase
 {
+    // GET /api/keywords/filter-options
+    [HttpGet("filter-options")]
+    [ResponseCache(Duration = 300)]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        var options = await cacheService.GetKeywordFilterOptionsAsync();
+        return Ok(options);
+    }
+
     // GET /api/keywords?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetAll(

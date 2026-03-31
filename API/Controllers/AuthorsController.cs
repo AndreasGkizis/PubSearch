@@ -6,8 +6,17 @@ namespace ResearchPublications.API.Controllers;
 
 [ApiController]
 [Route("api/authors")]
-public class AuthorsController(AuthorService authorService) : ControllerBase
+public class AuthorsController(AuthorService authorService, CacheService cacheService) : ControllerBase
 {
+    // GET /api/authors/filter-options
+    [HttpGet("filter-options")]
+    [ResponseCache(Duration = 300)]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        var options = await cacheService.GetAuthorFilterOptionsAsync();
+        return Ok(options);
+    }
+
     // GET /api/authors?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetAll(

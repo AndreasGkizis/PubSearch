@@ -64,14 +64,14 @@ public abstract class IntegrationTestBase
 
     protected async Task<List<string>> GetAllAuthorNamesAsync()
     {
-        var response = await Client.GetAsync("/api/publications/authors");
+        var response = await Client.GetAsync("/api/authors/filter-options");
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<List<string>>())!;
     }
 
     protected async Task<List<string>> GetAllKeywordValuesAsync()
     {
-        var response = await Client.GetAsync("/api/publications/keywords");
+        var response = await Client.GetAsync("/api/keywords/filter-options");
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<List<string>>())!;
     }

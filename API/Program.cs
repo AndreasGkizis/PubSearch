@@ -11,6 +11,8 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<CacheService>();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<AuthorService>();
 builder.Services.AddScoped<KeywordService>();
@@ -26,6 +28,11 @@ using (var scope = app.Services.CreateScope())
 
     var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
     await seeder.SeedAsync();
+
+    // Preload filter-option caches
+    var cacheService = scope.ServiceProvider.GetRequiredService<CacheService>();
+    await cacheService.RefreshAuthorFilterOptionsAsync();
+    await cacheService.RefreshKeywordFilterOptionsAsync();
 }
 
 // ── Ensure PDF storage folder exists ──────────────────────────────────────

@@ -1,5 +1,5 @@
-GET https://localhost:7129/api/publications/keywords
+GET https://localhost:7129/api/keywords/filter-options
 
 ###
 
-GET https://localhost:7129/api/publications/authors
+GET https://localhost:7129/api/authors/filter-options

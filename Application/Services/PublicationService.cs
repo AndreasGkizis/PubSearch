@@ -5,7 +5,7 @@ using Keyword = ResearchPublications.Domain.Entities.Keyword;
 
 namespace ResearchPublications.Application.Services;
 
-public class PublicationService(IPublicationRepository repository)
+public class PublicationService(IPublicationRepository repository, CacheService cacheService)
 {
     public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(
         int page, int pageSize, SearchFilters? filters = null)
@@ -27,7 +27,10 @@ public class PublicationService(IPublicationRepository repository)
     public async Task<int> CreateAsync(PublicationDetailDto dto)
     {
         var entity = FromDetail(dto);
-        return await repository.CreateAsync(entity);
+        var id = await repository.CreateAsync(entity);
+        await cacheService.RefreshAuthorFilterOptionsAsync();
+        await cacheService.RefreshKeywordFilterOptionsAsync();
+        return id;
     }
 
     public async Task UpdateAsync(int id, PublicationDetailDto dto)
@@ -37,6 +40,8 @@ public class PublicationService(IPublicationRepository repository)
         var entity = FromDetail(dto);
         entity.Id = id;
         await repository.UpdateAsync(entity);
+        await cacheService.RefreshAuthorFilterOptionsAsync();
+        await cacheService.RefreshKeywordFilterOptionsAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -44,18 +49,8 @@ public class PublicationService(IPublicationRepository repository)
         _ = await repository.GetByIdAsync(id)
             ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
         await repository.DeleteAsync(id);
-    }
-
-    public async Task<IEnumerable<FilterOptionDto>> GetAllAuthorsAsync()
-    {
-        var items = await repository.GetAllAuthorsAsync();
-        return items.Select(x => new FilterOptionDto(x.Name, x.Count));
-    }
-
-    public async Task<IEnumerable<FilterOptionDto>> GetAllKeywordsAsync()
-    {
-        var items = await repository.GetAllKeywordsAsync();
-        return items.Select(x => new FilterOptionDto(x.Name, x.Count));
+        await cacheService.RefreshAuthorFilterOptionsAsync();
+        await cacheService.RefreshKeywordFilterOptionsAsync();
     }
 
     // ── Mapping helpers ────────────────────────────────────────────────────

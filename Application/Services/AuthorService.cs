@@ -5,7 +5,7 @@ using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Application.Services;
 
-public class AuthorService(IAuthorRepository repository)
+public class AuthorService(IAuthorRepository repository, CacheService cacheService)
 {
     public async Task<(IEnumerable<AuthorManagementDto> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
     {
@@ -23,7 +23,9 @@ public class AuthorService(IAuthorRepository repository)
     public async Task<int> CreateAsync(AuthorManagementDto dto)
     {
         var entity = FromDto(dto);
-        return await repository.CreateAsync(entity);
+        var id = await repository.CreateAsync(entity);
+        await cacheService.RefreshAuthorFilterOptionsAsync();
+        return id;
     }
 
     public async Task UpdateAsync(int id, AuthorManagementDto dto)
@@ -34,6 +36,7 @@ public class AuthorService(IAuthorRepository repository)
         var entity = FromDto(dto);
         entity.Id = id;
         await repository.UpdateAsync(entity);
+        await cacheService.RefreshAuthorFilterOptionsAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -41,6 +44,7 @@ public class AuthorService(IAuthorRepository repository)
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Author {id} was not found.");
         await repository.DeleteAsync(id);
+        await cacheService.RefreshAuthorFilterOptionsAsync();
     }
 
     private static AuthorManagementDto ToDto(Author a) => new()

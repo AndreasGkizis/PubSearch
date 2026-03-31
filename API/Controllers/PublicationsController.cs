@@ -33,24 +33,6 @@ public class PublicationsController(PublicationService publicationService, IFile
         return Ok(new { items, total, page, pageSize });
     }
 
-    // GET /api/publications/authors
-    [HttpGet("authors")]
-    [ResponseCache(Duration = 300)]
-    public async Task<IActionResult> GetAuthors()
-    {
-        var authors = await publicationService.GetAllAuthorsAsync();
-        return Ok(authors);
-    }
-
-    // GET /api/publications/keywords
-    [HttpGet("keywords")]
-    [ResponseCache(Duration = 300)]
-    public async Task<IActionResult> GetKeywords()
-    {
-        var keywords = await publicationService.GetAllKeywordsAsync();
-        return Ok(keywords);
-    }
-
     // GET /api/publications/{id}
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

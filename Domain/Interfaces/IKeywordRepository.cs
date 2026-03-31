@@ -10,4 +10,5 @@ public interface IKeywordRepository
     Task<int> CreateAsync(Keyword keyword);
     Task UpdateAsync(Keyword keyword);
     Task DeleteAsync(int id);
+    Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync();
 }
