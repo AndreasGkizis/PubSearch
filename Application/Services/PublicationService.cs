@@ -59,7 +59,11 @@ public class PublicationService(IPublicationRepository repository, CacheService 
     {
         Id = p.Id,
         Title = p.Title,
-        Authors = p.Authors.Select(a => a.FullName).ToList(),
+        Authors = p.Authors.Select(a =>
+            string.IsNullOrWhiteSpace(a.MiddleName)
+                ? $"{a.FirstName} {a.LastName}".Trim()
+                : $"{a.FirstName} {a.MiddleName} {a.LastName}".Trim()
+        ).ToList(),
         Year = p.Year,
         Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
         AbstractSnippet = p.Abstract is { Length: > 200 }
@@ -83,7 +87,9 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         Authors = p.Authors.Select(a => new AuthorDto
         {
             Id = a.Id,
-            FullName = a.FullName,
+            FirstName = a.FirstName,
+            MiddleName = a.MiddleName,
+            LastName = a.LastName,
             Email = a.Email
         }).ToList()
     };
@@ -105,7 +111,9 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         Authors = dto.Authors.Select(a => new Author
         {
             Id = a.Id,
-            FullName = a.FullName,
+            FirstName = a.FirstName,
+            MiddleName = a.MiddleName,
+            LastName = a.LastName,
             Email = a.Email
         }).ToList()
     };

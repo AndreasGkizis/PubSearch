@@ -38,7 +38,7 @@
 
       <div>
         <h2 class="text-2xl font-bold text-gray-800 leading-snug" x-text="pub?.title"></h2>
-        <p class="text-indigo-600 mt-1" x-text="(pub?.authors || []).map(a => a.fullName).join(', ')"></p>
+        <p class="text-indigo-600 mt-1" x-text="(pub?.authors || []).map(a => [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join(', ')"></p>
       </div>
 
       <div class="flex flex-wrap gap-4 text-sm text-gray-500">

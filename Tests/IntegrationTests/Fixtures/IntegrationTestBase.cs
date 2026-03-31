@@ -34,7 +34,7 @@ public abstract class IntegrationTestBase
             Keywords      = keywords,
             Abstract      = @abstract,
             DOI           = doi,
-            Authors       = authors ?? [new AuthorDto { FullName = "Default Author" }]
+            Authors       = authors ?? [new AuthorDto { FirstName = "Default", LastName = "Author" }]
         };
 
         var response = await Client.PostAsJsonAsync("/api/publications", payload);
@@ -79,17 +79,17 @@ public abstract class IntegrationTestBase
     // ── Author management ──────────────────────────────────────────────────
 
     protected async Task<int> CreateAuthorAsync(
-        string? fullName = null,
         string? firstName = null,
+        string? middleName = null,
         string? lastName = null,
         string? email = null)
     {
         var payload = new AuthorManagementDto
         {
-            FullName  = fullName ?? $"Author-{Guid.NewGuid():N}",
-            FirstName = firstName ?? "",
-            LastName  = lastName ?? "",
-            Email     = email
+            FirstName  = firstName ?? $"Author-{Guid.NewGuid():N}",
+            MiddleName = middleName,
+            LastName   = lastName ?? "Test",
+            Email      = email
         };
 
         var response = await Client.PostAsJsonAsync("/api/authors", payload);

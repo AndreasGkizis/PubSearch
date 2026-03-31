@@ -18,7 +18,7 @@ public class PublicationCrudTests(PubSearchApiFactory factory) : IntegrationTest
             Title    = $"CRUD-Create-{Guid.NewGuid():N}",
             Year     = 2024,
             Keywords = "Testing",
-            Authors  = [new AuthorDto { FullName = "Test Author" }]
+            Authors  = [new AuthorDto { FirstName = "Test", LastName = "Author" }]
         };
 
         // Act
@@ -41,7 +41,7 @@ public class PublicationCrudTests(PubSearchApiFactory factory) : IntegrationTest
             @abstract: "A detailed abstract about testing",
             doi: "10.1234/test.get",
             keywords: "AI, ML",
-            authors: [new AuthorDto { FullName = "Alice Get", Email = "alice@test.com" }]);
+            authors: [new AuthorDto { FirstName = "Alice", LastName = "Get", Email = "alice@test.com" }]);
 
         // Act
         var detail = await GetPublicationAsync(id);

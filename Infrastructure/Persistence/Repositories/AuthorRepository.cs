@@ -10,7 +10,7 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     {
         var query = context.Authors
             .AsNoTracking()
-            .OrderBy(a => a.FullName);
+            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName);
 
         var total = await query.CountAsync();
         var items = await query
@@ -19,8 +19,8 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
             .Select(a => new Author
             {
                 Id = a.Id,
-                FullName = a.FullName,
                 FirstName = a.FirstName,
+                MiddleName = a.MiddleName,
                 LastName = a.LastName,
                 Email = a.Email,
                 CreatedAt = a.CreatedAt,
@@ -39,8 +39,8 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
             .Select(a => new Author
             {
                 Id = a.Id,
-                FullName = a.FullName,
                 FirstName = a.FirstName,
+                MiddleName = a.MiddleName,
                 LastName = a.LastName,
                 Email = a.Email,
                 CreatedAt = a.CreatedAt,
@@ -61,8 +61,8 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
         var existing = await context.Authors.FindAsync(author.Id)
             ?? throw new InvalidOperationException($"Author {author.Id} not found.");
 
-        existing.FullName = author.FullName;
         existing.FirstName = author.FirstName;
+        existing.MiddleName = author.MiddleName;
         existing.LastName = author.LastName;
         existing.Email = author.Email;
         existing.LastModified = DateTime.UtcNow;
@@ -85,7 +85,10 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     public async Task<IEnumerable<(string Name, int Count)>> GetFilterOptionsAsync()
     {
         var results = await context.Authors
-            .Select(a => new { Name = a.FullName, Count = a.Publications.Count })
+            .Select(a => new {
+                Name = a.FirstName + (a.MiddleName != null ? " " + a.MiddleName : "") + " " + a.LastName,
+                Count = a.Publications.Count
+            })
             .OrderBy(x => x.Name)
             .ToListAsync();
         return results.Select(x => (x.Name, x.Count));

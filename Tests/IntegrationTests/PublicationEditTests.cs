@@ -15,11 +15,11 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
     public async Task Update_ScalarFields_AllFieldsUpdated()
     {
         // Arrange
-        var authorName = $"ScalarAuthor-{Guid.NewGuid():N}";
+        var authorFirstName = $"ScalarAuthor-{Guid.NewGuid():N}";
         var id = await CreatePublicationAsync(
             title: "Original Title",
             year: 2020,
-            authors: [new AuthorDto { FullName = authorName }]);
+            authors: [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]);
 
         // Act
         var payload = new PublicationDetailDto
@@ -29,7 +29,7 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
             DOI           = "10.9999/updated",
             Abstract      = "New abstract",
             Body          = "New body text",
-            Authors       = [new AuthorDto { FullName = authorName }]
+            Authors       = [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]
         };
         var response = await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
@@ -50,7 +50,7 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         var payload = new PublicationDetailDto
         {
             Title   = "Ghost",
-            Authors = [new AuthorDto { FullName = "Nobody" }]
+            Authors = [new AuthorDto { FirstName = "Nobody", LastName = "Test" }]
         };
 
         var response = await Client.PutAsJsonAsync("/api/publications/999999", payload);
@@ -71,7 +71,7 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         {
             Title    = "AddKw-Updated",
             Keywords = "Machine Learning, Neural Networks",
-            Authors  = [new AuthorDto { FullName = "KW Author" }]
+            Authors  = [new AuthorDto { FirstName = "KW", LastName = "Author" }]
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
@@ -93,7 +93,7 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         var payload = new PublicationDetailDto
         {
             Title   = "RemoveKw-Updated",
-            Authors = [new AuthorDto { FullName = "KW Author" }]
+            Authors = [new AuthorDto { FirstName = "KW", LastName = "Author" }]
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
@@ -115,7 +115,7 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         {
             Title    = "SwapKw-Updated",
             Keywords = "NewKeywordA, NewKeywordB",
-            Authors  = [new AuthorDto { FullName = "KW Author" }]
+            Authors  = [new AuthorDto { FirstName = "KW", LastName = "Author" }]
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
@@ -147,43 +147,43 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
     public async Task Update_SameAuthorWithoutId_NoDuplicateAuthorRow()
     {
         // Arrange — create a publication with a unique author
-        var authorName = $"DedupAuthor-{Guid.NewGuid():N}";
+        var authorFirstName = $"DedupAuthor-{Guid.NewGuid():N}";
         var id = await CreatePublicationAsync(
             title: $"AuthorDedup-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = authorName }]);
+            authors: [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]);
 
         // Act — edit the publication, sending the author without an ID (id = 0).
         //        This simulates what the admin UI does on each edit round-trip.
         var payload = new PublicationDetailDto
         {
             Title   = "AuthorDedup-Updated",
-            Authors = [new AuthorDto { FullName = authorName }] // id defaults to 0
+            Authors = [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }] // id defaults to 0
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
         // Assert — the author name must appear only once in the Authors table
         var allAuthors = await GetAllAuthorNamesAsync();
-        Assert.Single(allAuthors, a => a == authorName);
+        Assert.Single(allAuthors, a => a == $"{authorFirstName} Test");
     }
 
     [Fact]
     public async Task Update_AddNewAuthor_AuthorAppearsInDetail()
     {
         // Arrange
-        var originalAuthor = $"OrigAuth-{Guid.NewGuid():N}";
+        var originalFirstName = $"OrigAuth-{Guid.NewGuid():N}";
         var id = await CreatePublicationAsync(
             title: $"AddAuth-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = originalAuthor }]);
+            authors: [new AuthorDto { FirstName = originalFirstName, LastName = "Test" }]);
 
         // Act — add a second author
-        var newAuthor = $"NewAuth-{Guid.NewGuid():N}";
+        var newFirstName = $"NewAuth-{Guid.NewGuid():N}";
         var payload = new PublicationDetailDto
         {
             Title   = "AddAuth-Updated",
             Authors =
             [
-                new AuthorDto { FullName = originalAuthor },
-                new AuthorDto { FullName = newAuthor }
+                new AuthorDto { FirstName = originalFirstName, LastName = "Test" },
+                new AuthorDto { FirstName = newFirstName, LastName = "Test" }
             ]
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
@@ -191,53 +191,53 @@ public class PublicationEditTests(PubSearchApiFactory factory) : IntegrationTest
         // Assert
         var detail = await GetPublicationAsync(id);
         Assert.Equal(2, detail.Authors.Count);
-        Assert.Contains(detail.Authors, a => a.FullName == originalAuthor);
-        Assert.Contains(detail.Authors, a => a.FullName == newAuthor);
+        Assert.Contains(detail.Authors, a => a.FirstName == originalFirstName);
+        Assert.Contains(detail.Authors, a => a.FirstName == newFirstName);
     }
 
     [Fact]
     public async Task Update_RemoveAuthor_AuthorRemovedFromPublication()
     {
         // Arrange
-        var keep   = $"KeepAuth-{Guid.NewGuid():N}";
-        var remove = $"RemoveAuth-{Guid.NewGuid():N}";
+        var keepFirstName   = $"KeepAuth-{Guid.NewGuid():N}";
+        var removeFirstName = $"RemoveAuth-{Guid.NewGuid():N}";
         var id = await CreatePublicationAsync(
             title: $"RemAuth-{Guid.NewGuid():N}",
             authors:
             [
-                new AuthorDto { FullName = keep },
-                new AuthorDto { FullName = remove }
+                new AuthorDto { FirstName = keepFirstName, LastName = "Test" },
+                new AuthorDto { FirstName = removeFirstName, LastName = "Test" }
             ]);
 
         // Act — update with only the first author
         var payload = new PublicationDetailDto
         {
             Title   = "RemAuth-Updated",
-            Authors = [new AuthorDto { FullName = keep }]
+            Authors = [new AuthorDto { FirstName = keepFirstName, LastName = "Test" }]
         };
         await Client.PutAsJsonAsync($"/api/publications/{id}", payload);
 
         // Assert
         var detail = await GetPublicationAsync(id);
         Assert.Single(detail.Authors);
-        Assert.Equal(keep, detail.Authors[0].FullName);
+        Assert.Equal(keepFirstName, detail.Authors[0].FirstName);
     }
 
     [Fact]
     public async Task Create_SharedAuthorAcrossPublications_NoDuplicateAuthorRow()
     {
         // Arrange — two publications created independently with the same author name
-        var sharedAuthor = $"SharedAuth-{Guid.NewGuid():N}";
+        var sharedFirstName = $"SharedAuth-{Guid.NewGuid():N}";
         await CreatePublicationAsync(
             title: $"SharedAuth-1-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = sharedAuthor }]);
+            authors: [new AuthorDto { FirstName = sharedFirstName, LastName = "Test" }]);
 
         await CreatePublicationAsync(
             title: $"SharedAuth-2-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = sharedAuthor }]);
+            authors: [new AuthorDto { FirstName = sharedFirstName, LastName = "Test" }]);
 
         // Assert — the author name must appear only once in the Authors table
         var allAuthors = await GetAllAuthorNamesAsync();
-        Assert.Single(allAuthors, a => a == sharedAuthor);
+        Assert.Single(allAuthors, a => a == $"{sharedFirstName} Test");
     }
 }

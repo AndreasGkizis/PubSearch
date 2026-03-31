@@ -18,6 +18,12 @@ public record PublicationDetailDto
 public record AuthorDto
 {
     public int Id { get; init; }
-    public string FullName { get; init; } = string.Empty;
+    public string FirstName { get; init; } = string.Empty;
+    public string? MiddleName { get; init; }
+    public string LastName { get; init; } = string.Empty;
     public string? Email { get; init; }
+
+    public string FullName => string.IsNullOrWhiteSpace(MiddleName)
+        ? $"{FirstName} {LastName}".Trim()
+        : $"{FirstName} {MiddleName} {LastName}".Trim();
 }

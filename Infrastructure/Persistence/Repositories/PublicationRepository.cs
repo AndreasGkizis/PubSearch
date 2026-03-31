@@ -30,7 +30,8 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
             query = query.Where(p => p.Year <= yearTo);
 
         if (authors is { Count: > 0 })
-            query = query.Where(p => p.Authors.Any(a => authors.Contains(a.FullName)));
+            query = query.Where(p => p.Authors.Any(a =>
+                authors.Contains(a.FirstName + (a.MiddleName != null ? " " + a.MiddleName : "") + " " + a.LastName)));
 
         if (keywords is { Count: > 0 })
             query = query.Where(p => p.Keywords.Any(k => keywords.Contains(k.Value)));
@@ -50,7 +51,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
                 p.PdfFileName,
                 p.LastModified,
                 p.CreatedAt,
-                Authors = p.Authors.Select(a => new { a.Id, a.FullName, a.Email }).ToList(),
+                Authors = p.Authors.Select(a => new { a.Id, a.FirstName, a.MiddleName, a.LastName, a.Email }).ToList(),
                 Keywords = p.Keywords.Select(k => new { k.Id, k.Value }).ToList()
             })
             .ToListAsync();
@@ -64,7 +65,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
             PdfFileName = p.PdfFileName,
             LastModified = p.LastModified,
             CreatedAt = p.CreatedAt,
-            Authors = p.Authors.Select(a => new Author { Id = a.Id, FullName = a.FullName, Email = a.Email }).ToList(),
+            Authors = p.Authors.Select(a => new Author { Id = a.Id, FirstName = a.FirstName, MiddleName = a.MiddleName, LastName = a.LastName, Email = a.Email }).ToList(),
             Keywords = p.Keywords.Select(k => new Keyword { Id = k.Id, Value = k.Value }).ToList()
         });
 
@@ -96,7 +97,8 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
                 }
             }
 
-            var byName = await context.Authors.FirstOrDefaultAsync(a => a.FullName == author.FullName);
+            var byName = await context.Authors.FirstOrDefaultAsync(a =>
+                a.FirstName == author.FirstName && a.MiddleName == author.MiddleName && a.LastName == author.LastName);
             if (byName != null)
                 publication.Authors[i] = byName;
         }
@@ -136,7 +138,8 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
             }
 
             // Resolve by name to avoid inserting duplicates when ID is unknown
-            var byName = await context.Authors.FirstOrDefaultAsync(a => a.FullName == author.FullName);
+            var byName = await context.Authors.FirstOrDefaultAsync(a =>
+                a.FirstName == author.FirstName && a.MiddleName == author.MiddleName && a.LastName == author.LastName);
             existing.Authors.Add(byName ?? author);
         }
 

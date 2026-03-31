@@ -14,8 +14,7 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     {
         var payload = new AuthorManagementDto
         {
-            FullName  = $"Create-{Guid.NewGuid():N}",
-            FirstName = "John",
+            FirstName = $"Create-{Guid.NewGuid():N}",
             LastName  = "Doe",
             Email     = "john@test.com"
         };
@@ -30,12 +29,10 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     [Fact]
     public async Task GetById_ExistingAuthor_ReturnsDetail()
     {
-        var name = $"Get-{Guid.NewGuid():N}";
-        var id = await CreateAuthorAsync(fullName: name, firstName: "Alice", lastName: "Smith", email: "alice@test.com");
+        var id = await CreateAuthorAsync(firstName: "Alice", lastName: "Smith", email: "alice@test.com");
 
         var detail = await GetAuthorAsync(id);
 
-        Assert.Equal(name, detail.FullName);
         Assert.Equal("Alice", detail.FirstName);
         Assert.Equal("Smith", detail.LastName);
         Assert.Equal("alice@test.com", detail.Email);
@@ -68,11 +65,10 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     [Fact]
     public async Task Update_ScalarFields_AllFieldsUpdated()
     {
-        var id = await CreateAuthorAsync(fullName: "Original Name", firstName: "Orig", lastName: "Author");
+        var id = await CreateAuthorAsync(firstName: "Orig", lastName: "Author");
 
         var payload = new AuthorManagementDto
         {
-            FullName  = "Updated Name",
             FirstName = "New",
             LastName  = "Author",
             Email     = "new@test.com"
@@ -82,7 +78,6 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
         var detail = await GetAuthorAsync(id);
-        Assert.Equal("Updated Name", detail.FullName);
         Assert.Equal("New", detail.FirstName);
         Assert.Equal("Author", detail.LastName);
         Assert.Equal("new@test.com", detail.Email);
@@ -91,7 +86,7 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     [Fact]
     public async Task Update_NonExistent_ReturnsNotFound()
     {
-        var payload = new AuthorManagementDto { FullName = "Ghost" };
+        var payload = new AuthorManagementDto { FirstName = "Ghost", LastName = "Author" };
 
         var response = await Client.PutAsJsonAsync("/api/authors/999999", payload);
 
@@ -101,7 +96,7 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     [Fact]
     public async Task Delete_ExistingAuthor_RemovesIt()
     {
-        var id = await CreateAuthorAsync(fullName: $"Delete-{Guid.NewGuid():N}");
+        var id = await CreateAuthorAsync(firstName: $"Delete-{Guid.NewGuid():N}", lastName: "Test");
 
         var deleteResponse = await Client.DeleteAsync($"/api/authors/{id}");
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
@@ -122,14 +117,14 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
     public async Task Delete_AuthorLinkedToPublication_UnlinksButKeepsPublication()
     {
         // Arrange — create publication with a unique author
-        var authorName = $"LinkedAuth-{Guid.NewGuid():N}";
+        var authorFirstName = $"LinkedAuth-{Guid.NewGuid():N}";
         var pubId = await CreatePublicationAsync(
             title: $"PubForAuthDel-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = authorName }]);
+            authors: [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]);
 
         // Find the author's ID from the publication detail
         var pubDetail = await GetPublicationAsync(pubId);
-        var authorId = pubDetail.Authors.First(a => a.FullName == authorName).Id;
+        var authorId = pubDetail.Authors.First(a => a.FirstName == authorFirstName).Id;
 
         // Act — delete the author via the authors API
         var deleteResponse = await Client.DeleteAsync($"/api/authors/{authorId}");
@@ -137,24 +132,24 @@ public class AuthorCrudTests(PubSearchApiFactory factory) : IntegrationTestBase(
 
         // Assert — publication still exists but author is removed
         var updatedPub = await GetPublicationAsync(pubId);
-        Assert.DoesNotContain(updatedPub.Authors, a => a.FullName == authorName);
+        Assert.DoesNotContain(updatedPub.Authors, a => a.FirstName == authorFirstName);
     }
 
     [Fact]
     public async Task GetById_AuthorWithPublications_ReturnsCorrectCount()
     {
         // Arrange — create two publications with the same unique author
-        var authorName = $"CountAuth-{Guid.NewGuid():N}";
+        var authorFirstName = $"CountAuth-{Guid.NewGuid():N}";
         var pubId1 = await CreatePublicationAsync(
             title: $"PubCount1-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = authorName }]);
+            authors: [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]);
         await CreatePublicationAsync(
             title: $"PubCount2-{Guid.NewGuid():N}",
-            authors: [new AuthorDto { FullName = authorName }]);
+            authors: [new AuthorDto { FirstName = authorFirstName, LastName = "Test" }]);
 
         // Find the author's ID from the first publication's detail
         var pubDetail = await GetPublicationAsync(pubId1);
-        var authorId = pubDetail.Authors.First(a => a.FullName == authorName).Id;
+        var authorId = pubDetail.Authors.First(a => a.FirstName == authorFirstName).Id;
 
         // Act
         var detail = await GetAuthorAsync(authorId);

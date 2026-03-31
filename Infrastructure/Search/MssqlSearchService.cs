@@ -24,7 +24,8 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
             q = q.Where(p => p.Year <= filters.YearTo);
 
         if (filters.Authors is { Count: > 0 })
-            q = q.Where(p => p.Authors.Any(a => filters.Authors.Contains(a.FullName)));
+            q = q.Where(p => p.Authors.Any(a =>
+                filters.Authors.Contains(a.FirstName + (a.MiddleName != null ? " " + a.MiddleName : "") + " " + a.LastName)));
 
         if (filters.Keywords is { Count: > 0 })
             q = q.Where(p => p.Keywords.Any(k => filters.Keywords.Contains(k.Value)));
@@ -38,7 +39,9 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
             {
                 Id = p.Id,
                 Title = p.Title,
-                Authors = p.Authors.Select(a => a.FullName).ToList(),
+                Authors = p.Authors.Select(a =>
+                    a.FirstName + (a.MiddleName != null ? " " + a.MiddleName : "") + " " + a.LastName
+                ).ToList(),
                 Year = p.Year,
                 Keywords = p.Keywords.Any()
                     ? string.Join(", ", p.Keywords.Select(k => k.Value))

@@ -1,9 +1,0 @@
-IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Keywords')
-BEGIN
-    CREATE TABLE dbo.Keywords (
-        Id INT IDENTITY(1,1) PRIMARY KEY,
-        [Value] NVARCHAR(100) NOT NULL UNIQUE,
-        CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
-        UpdatedAt DATETIME2 DEFAULT GETUTCDATE()
-    );
-END

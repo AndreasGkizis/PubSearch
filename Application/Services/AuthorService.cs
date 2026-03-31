@@ -50,8 +50,8 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
     private static AuthorManagementDto ToDto(Author a) => new()
     {
         Id = a.Id,
-        FullName = a.FullName,
         FirstName = a.FirstName,
+        MiddleName = a.MiddleName,
         LastName = a.LastName,
         Email = a.Email,
         PublicationCount = a.PublicationCount
@@ -59,8 +59,8 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
 
     private static Author FromDto(AuthorManagementDto dto) => new()
     {
-        FullName = dto.FullName,
         FirstName = dto.FirstName,
+        MiddleName = dto.MiddleName,
         LastName = dto.LastName,
         Email = dto.Email
     };

@@ -151,8 +151,8 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
     {
         var faker = new Faker<Author>()
             .RuleFor(a => a.FirstName, f => f.Name.FirstName())
+            .RuleFor(a => a.MiddleName, f => f.Random.Bool(0.3f) ? f.Name.FirstName() : null)
             .RuleFor(a => a.LastName, f => f.Name.LastName())
-            .RuleFor(a => a.FullName, (_, a) => $"{a.FirstName} {a.LastName}")
             .RuleFor(a => a.Email, (f, a) => f.Internet.Email(a.FirstName, a.LastName))
             .RuleFor(a => a.CreatedAt, _ => FixedTimestamp)
             .RuleFor(a => a.LastModified, _ => FixedTimestamp);

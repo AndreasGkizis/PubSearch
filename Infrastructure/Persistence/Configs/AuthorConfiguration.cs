@@ -12,17 +12,16 @@ public class AuthorConfiguration : IEntityTypeConfiguration<Author>
 
         builder.HasKey(a => a.Id);
 
-        builder.Property(a => a.FullName)
-            .IsRequired()
-            .HasMaxLength(300);
-
         builder.Property(a => a.FirstName)
-            .HasMaxLength(200)
-            .HasDefaultValue(string.Empty);
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Property(a => a.MiddleName)
+            .HasMaxLength(200);
 
         builder.Property(a => a.LastName)
-            .HasMaxLength(200)
-            .HasDefaultValue(string.Empty);
+            .IsRequired()
+            .HasMaxLength(200);
 
         builder.Property(a => a.Email)
             .HasMaxLength(300);

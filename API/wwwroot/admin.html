@@ -138,7 +138,7 @@
           <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
             <tr>
               <th class="px-4 py-3 text-left">ID</th>
-              <th class="px-4 py-3 text-left">Full Name</th>
+              <th class="px-4 py-3 text-left">Name</th>
               <th class="px-4 py-3 text-left">Email</th>
               <th class="px-4 py-3 text-center">Publications</th>
               <th class="px-4 py-3 text-center">Actions</th>
@@ -148,7 +148,7 @@
             <template x-for="author in authorsList" :key="author.id">
               <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 text-gray-400" x-text="author.id"></td>
-                <td class="px-4 py-3 font-medium text-gray-800" x-text="author.fullName"></td>
+                <td class="px-4 py-3 font-medium text-gray-800" x-text="[author.firstName, author.middleName, author.lastName].filter(Boolean).join(' ')"></td>
                 <td class="px-4 py-3 text-gray-500" x-text="author.email || '—'"></td>
                 <td class="px-4 py-3 text-center text-gray-500" x-text="author.publicationCount"></td>
                 <td class="px-4 py-3 text-center flex justify-center gap-2">
@@ -352,20 +352,20 @@
           x-text="authorForm.id ? 'Edit Author' : 'Add Author'"></h2>
       <div x-show="authorFormError" class="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-600 mb-4" x-text="authorFormError"></div>
       <form @submit.prevent="saveAuthor()" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1">Full Name *</label>
-          <input type="text" x-model="authorForm.fullName" required
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">First Name</label>
-            <input type="text" x-model="authorForm.firstName"
+            <label class="block text-xs font-semibold text-gray-500 mb-1">First Name *</label>
+            <input type="text" x-model="authorForm.firstName" required
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Last Name</label>
-            <input type="text" x-model="authorForm.lastName"
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Middle Name</label>
+            <input type="text" x-model="authorForm.middleName"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Last Name *</label>
+            <input type="text" x-model="authorForm.lastName" required
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           </div>
         </div>
@@ -392,7 +392,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
       <h3 class="font-bold text-gray-800 mb-2">Delete Author?</h3>
       <p class="text-sm text-gray-500 mb-1">
-        "<span x-text="deleteAuthorTarget?.fullName"></span>" will be permanently removed.
+        "<span x-text="[deleteAuthorTarget?.firstName, deleteAuthorTarget?.middleName, deleteAuthorTarget?.lastName].filter(Boolean).join(' ')"></span>" will be permanently removed.
       </p>
       <p x-show="deleteAuthorTarget?.publicationCount > 0" class="text-xs text-amber-600 mb-4">
         This author is linked to <span x-text="deleteAuthorTarget?.publicationCount"></span> publication(s). They will be unlinked.
@@ -490,7 +490,7 @@
         authorFormError: null,
         deleteAuthorTarget: null,
         deletingAuthor: false,
-        authorForm: { id: null, fullName: '', firstName: '', lastName: '', email: '' },
+        authorForm: { id: null, firstName: '', middleName: '', lastName: '', email: '' },
 
         // ── Keywords state ──
         keywordsList: [],
@@ -556,7 +556,10 @@
               year: pub.year ?? null,
               doi: pub.doi ?? '',
               keywords: pub.keywords ?? '',
-              authorsText: (pub.authors || []).map(a => a.email ? `${a.fullName} <${a.email}>` : a.fullName).join('\n'),
+              authorsText: (pub.authors || []).map(a => {
+                const name = [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
+                return a.email ? `${name} <${a.email}>` : name;
+              }).join('\n'),
               authorObjects: pub.authors || [],
               abstract: pub.abstract ?? '',
               body: pub.body ?? '',
@@ -599,8 +602,17 @@
             const fullName = m ? m[1].trim() : line.trim();
             const email = m ? m[2].trim() : null;
             if (!fullName) return null;
-            const existing = saved.find(a => a.fullName === fullName);
-            return { id: existing?.id ?? 0, fullName, email };
+            const parts = fullName.split(/\s+/);
+            let firstName, middleName, lastName;
+            if (parts.length === 1) {
+              firstName = parts[0]; middleName = null; lastName = '';
+            } else if (parts.length === 2) {
+              firstName = parts[0]; middleName = null; lastName = parts[1];
+            } else {
+              firstName = parts[0]; lastName = parts[parts.length - 1]; middleName = parts.slice(1, -1).join(' ');
+            }
+            const existing = saved.find(a => a.firstName === firstName && a.lastName === lastName && (a.middleName || null) === (middleName || null));
+            return { id: existing?.id ?? 0, firstName, middleName: middleName || null, lastName, email };
           }).filter(Boolean);
         },
 
@@ -669,7 +681,7 @@
         },
 
         openNewAuthor() {
-          this.authorForm = { id: null, fullName: '', firstName: '', lastName: '', email: '' };
+          this.authorForm = { id: null, firstName: '', middleName: '', lastName: '', email: '' };
           this.authorFormError = null;
           this.showAuthorModal = true;
         },
@@ -677,8 +689,8 @@
         openEditAuthor(author) {
           this.authorForm = {
             id: author.id,
-            fullName: author.fullName ?? '',
             firstName: author.firstName ?? '',
+            middleName: author.middleName ?? '',
             lastName: author.lastName ?? '',
             email: author.email ?? ''
           };
@@ -690,8 +702,8 @@
           this.authorFormError = null;
           this.savingAuthor = true;
           const payload = {
-            fullName: this.authorForm.fullName,
             firstName: this.authorForm.firstName || '',
+            middleName: this.authorForm.middleName || null,
             lastName: this.authorForm.lastName || '',
             email: this.authorForm.email || null
           };
