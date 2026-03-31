@@ -54,6 +54,6 @@ public class KeywordService(IKeywordRepository repository)
     {
         Id = k.Id,
         Value = k.Value,
-        PublicationCount = k.Publications.Count
+        PublicationCount = k.PublicationCount
     };
 }

@@ -10,13 +10,20 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
     {
         var query = context.Keywords
             .AsNoTracking()
-            .Include(k => k.Publications)
             .OrderBy(k => k.Value);
 
         var total = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(k => new Keyword
+            {
+                Id = k.Id,
+                Value = k.Value,
+                CreatedAt = k.CreatedAt,
+                LastModified = k.LastModified,
+                PublicationCount = k.Publications.Count
+            })
             .ToListAsync();
 
         return (items, total);
@@ -25,8 +32,16 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
     public async Task<Keyword?> GetByIdAsync(int id) =>
         await context.Keywords
             .AsNoTracking()
-            .Include(k => k.Publications)
-            .FirstOrDefaultAsync(k => k.Id == id);
+            .Where(k => k.Id == id)
+            .Select(k => new Keyword
+            {
+                Id = k.Id,
+                Value = k.Value,
+                CreatedAt = k.CreatedAt,
+                LastModified = k.LastModified,
+                PublicationCount = k.Publications.Count
+            })
+            .FirstOrDefaultAsync();
 
     public async Task<Keyword?> GetByValueAsync(string value) =>
         await context.Keywords
@@ -54,12 +69,10 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
     public async Task DeleteAsync(int id)
     {
         var keyword = await context.Keywords
-            .Include(k => k.Publications)
             .FirstOrDefaultAsync(k => k.Id == id);
 
         if (keyword is not null)
         {
-            keyword.Publications.Clear();
             context.Keywords.Remove(keyword);
             await context.SaveChangesAsync();
         }

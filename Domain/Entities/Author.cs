@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ResearchPublications.Domain.Entities;
 
 public class Author : BaseDbEntity
@@ -8,4 +10,7 @@ public class Author : BaseDbEntity
     public string? Email { get; set; }
 
     public List<Publication> Publications { get; set; } = [];
+
+    [NotMapped]
+    public int PublicationCount { get; set; }
 }

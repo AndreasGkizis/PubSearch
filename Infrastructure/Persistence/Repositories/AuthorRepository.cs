@@ -10,13 +10,23 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     {
         var query = context.Authors
             .AsNoTracking()
-            .Include(a => a.Publications)
             .OrderBy(a => a.FullName);
 
         var total = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(a => new Author
+            {
+                Id = a.Id,
+                FullName = a.FullName,
+                FirstName = a.FirstName,
+                LastName = a.LastName,
+                Email = a.Email,
+                CreatedAt = a.CreatedAt,
+                LastModified = a.LastModified,
+                PublicationCount = a.Publications.Count
+            })
             .ToListAsync();
 
         return (items, total);
@@ -25,8 +35,19 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     public async Task<Author?> GetByIdAsync(int id) =>
         await context.Authors
             .AsNoTracking()
-            .Include(a => a.Publications)
-            .FirstOrDefaultAsync(a => a.Id == id);
+            .Where(a => a.Id == id)
+            .Select(a => new Author
+            {
+                Id = a.Id,
+                FullName = a.FullName,
+                FirstName = a.FirstName,
+                LastName = a.LastName,
+                Email = a.Email,
+                CreatedAt = a.CreatedAt,
+                LastModified = a.LastModified,
+                PublicationCount = a.Publications.Count
+            })
+            .FirstOrDefaultAsync();
 
     public async Task<int> CreateAsync(Author author)
     {
@@ -52,12 +73,10 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     public async Task DeleteAsync(int id)
     {
         var author = await context.Authors
-            .Include(a => a.Publications)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (author is not null)
         {
-            author.Publications.Clear();
             context.Authors.Remove(author);
             await context.SaveChangesAsync();
         }

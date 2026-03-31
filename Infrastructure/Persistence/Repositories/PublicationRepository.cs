@@ -21,8 +21,6 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
     {
         var query = context.Publications
             .AsNoTracking()
-            .Include(p => p.Authors)
-            .Include(p => p.Keywords)
             .AsQueryable();
 
         if (yearFrom.HasValue)
@@ -38,11 +36,37 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
             query = query.Where(p => p.Keywords.Any(k => keywords.Contains(k.Value)));
 
         var total = await query.CountAsync();
-        var items = await query
+
+        var projected = await query
             .OrderByDescending(p => p.LastModified)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(p => new
+            {
+                p.Id,
+                p.Title,
+                p.Year,
+                p.Abstract,
+                p.PdfFileName,
+                p.LastModified,
+                p.CreatedAt,
+                Authors = p.Authors.Select(a => new { a.Id, a.FullName, a.Email }).ToList(),
+                Keywords = p.Keywords.Select(k => new { k.Id, k.Value }).ToList()
+            })
             .ToListAsync();
+
+        var items = projected.Select(p => new Publication
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Year = p.Year,
+            Abstract = p.Abstract,
+            PdfFileName = p.PdfFileName,
+            LastModified = p.LastModified,
+            CreatedAt = p.CreatedAt,
+            Authors = p.Authors.Select(a => new Author { Id = a.Id, FullName = a.FullName, Email = a.Email }).ToList(),
+            Keywords = p.Keywords.Select(k => new Keyword { Id = k.Id, Value = k.Value }).ToList()
+        });
 
         return (items, total);
     }

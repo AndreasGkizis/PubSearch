@@ -50,7 +50,7 @@ public class AuthorService(IAuthorRepository repository)
         FirstName = a.FirstName,
         LastName = a.LastName,
         Email = a.Email,
-        PublicationCount = a.Publications.Count
+        PublicationCount = a.PublicationCount
     };
 
     private static Author FromDto(AuthorManagementDto dto) => new()
