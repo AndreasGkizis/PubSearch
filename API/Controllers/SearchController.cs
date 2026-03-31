@@ -16,7 +16,9 @@ public class SearchController(ISearchService searchService) : ControllerBase
         [FromQuery] int?      yearFrom = null,
         [FromQuery] int?      yearTo   = null,
         [FromQuery] string[]? authors  = null,
-        [FromQuery] string[]? keywords = null)
+        [FromQuery] string[]? keywords = null,
+        [FromQuery] string[]? languages = null,
+        [FromQuery] string[]? publicationTypes = null)
     {
         if (string.IsNullOrWhiteSpace(q))
             return BadRequest(new { error = "Query parameter 'q' is required." });
@@ -24,7 +26,7 @@ public class SearchController(ISearchService searchService) : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 20) pageSize = 20;
 
-        var filters = new SearchFilters(yearFrom, yearTo, authors, keywords);
+        var filters = new SearchFilters(yearFrom, yearTo, authors, keywords, languages, publicationTypes);
         var (items, total) = await searchService.SearchAsync(q, filters, page, pageSize);
         return Ok(new { items, total, page, pageSize });
     }

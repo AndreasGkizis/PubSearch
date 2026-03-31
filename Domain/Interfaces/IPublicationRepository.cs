@@ -9,7 +9,9 @@ public interface IPublicationRepository
         int page, int pageSize,
         int? yearFrom = null, int? yearTo = null,
         IReadOnlyList<string>? authors = null,
-        IReadOnlyList<string>? keywords = null);
+        IReadOnlyList<string>? keywords = null,
+        IReadOnlyList<string>? languages = null,
+        IReadOnlyList<string>? publicationTypes = null);
     Task<int> CreateAsync(Publication publication);
     Task UpdateAsync(Publication publication);
     Task DeleteAsync(int id);

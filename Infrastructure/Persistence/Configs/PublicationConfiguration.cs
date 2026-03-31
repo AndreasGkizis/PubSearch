@@ -41,5 +41,13 @@ public class PublicationConfiguration : IEntityTypeConfiguration<Publication>
         builder.HasMany(p => p.Keywords)
             .WithMany(k => k.Publications)
             .UsingEntity(j => j.ToTable("PublicationKeywords"));
+
+        builder.HasMany(p => p.Languages)
+            .WithMany(l => l.Publications)
+            .UsingEntity(j => j.ToTable("PublicationLanguages"));
+
+        builder.HasMany(p => p.PublicationTypes)
+            .WithMany(pt => pt.Publications)
+            .UsingEntity(j => j.ToTable("PublicationPublicationTypes"));
     }
 }

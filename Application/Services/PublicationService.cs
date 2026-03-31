@@ -2,6 +2,8 @@ using ResearchPublications.Application.DTOs;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 using Keyword = ResearchPublications.Domain.Entities.Keyword;
+using Language = ResearchPublications.Domain.Entities.Language;
+using PublicationType = ResearchPublications.Domain.Entities.PublicationType;
 
 namespace ResearchPublications.Application.Services;
 
@@ -13,7 +15,8 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         var (items, total) = await repository.GetAllAsync(
             page, pageSize,
             filters?.YearFrom, filters?.YearTo,
-            filters?.Authors, filters?.Keywords);
+            filters?.Authors, filters?.Keywords,
+            filters?.Languages, filters?.PublicationTypes);
         return (items.Select(ToSummary), total);
     }
 
@@ -30,6 +33,8 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         var id = await repository.CreateAsync(entity);
         await cacheService.RefreshAuthorFilterOptionsAsync();
         await cacheService.RefreshKeywordFilterOptionsAsync();
+        await cacheService.RefreshLanguageFilterOptionsAsync();
+        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
         return id;
     }
 
@@ -42,6 +47,8 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         await repository.UpdateAsync(entity);
         await cacheService.RefreshAuthorFilterOptionsAsync();
         await cacheService.RefreshKeywordFilterOptionsAsync();
+        await cacheService.RefreshLanguageFilterOptionsAsync();
+        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -51,6 +58,8 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         await repository.DeleteAsync(id);
         await cacheService.RefreshAuthorFilterOptionsAsync();
         await cacheService.RefreshKeywordFilterOptionsAsync();
+        await cacheService.RefreshLanguageFilterOptionsAsync();
+        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
     }
 
     // ── Mapping helpers ────────────────────────────────────────────────────
@@ -66,8 +75,10 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         ).ToList(),
         Year = p.Year,
         Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
+        Languages = p.Languages.Count > 0 ? string.Join(", ", p.Languages.Select(l => l.Value)) : null,
+        PublicationTypes = p.PublicationTypes.Count > 0 ? string.Join(", ", p.PublicationTypes.Select(pt => pt.Value)) : null,
         AbstractSnippet = p.Abstract is { Length: > 200 }
-            ? p.Abstract[..200] + "…"
+            ? p.Abstract[..200] + "\u2026"
             : p.Abstract,
         PdfFileName = p.PdfFileName
     };
@@ -79,6 +90,8 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         Abstract = p.Abstract,
         Body = p.Body,
         Keywords = p.Keywords.Count > 0 ? string.Join(", ", p.Keywords.Select(k => k.Value)) : null,
+        Languages = p.Languages.Count > 0 ? string.Join(", ", p.Languages.Select(l => l.Value)) : null,
+        PublicationTypes = p.PublicationTypes.Count > 0 ? string.Join(", ", p.PublicationTypes.Select(pt => pt.Value)) : null,
         Year = p.Year,
         DOI = p.DOI,
         PdfFileName = p.PdfFileName,
@@ -104,6 +117,18 @@ public class PublicationService(IPublicationRepository repository, CacheService 
             : dto.Keywords
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(v => new Keyword { Value = v })
+                .ToList(),
+        Languages = string.IsNullOrWhiteSpace(dto.Languages)
+            ? []
+            : dto.Languages
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(v => new Language { Value = v })
+                .ToList(),
+        PublicationTypes = string.IsNullOrWhiteSpace(dto.PublicationTypes)
+            ? []
+            : dto.PublicationTypes
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(v => new PublicationType { Value = v })
                 .ToList(),
         Year = dto.Year,
         DOI = dto.DOI,

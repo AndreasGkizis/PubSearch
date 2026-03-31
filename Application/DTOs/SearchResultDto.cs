@@ -7,6 +7,8 @@ public record SearchResultDto
     public List<string> Authors { get; init; } = [];
     public int? Year { get; init; }
     public string? Keywords { get; init; }
+    public string? Languages { get; init; }
+    public string? PublicationTypes { get; init; }
     public string? AbstractSnippet { get; init; }
     public string? PdfFileName { get; init; }
     public double Rank { get; init; }

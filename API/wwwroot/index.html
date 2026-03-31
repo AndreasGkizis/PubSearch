@@ -97,6 +97,50 @@
           </div>
         </div>
 
+        <!-- Languages -->
+        <div class="flex flex-col gap-1.5">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Languages
+            <span x-show="selectedLanguages.length > 0" class="normal-case font-normal text-indigo-600"
+              x-text="'(' + selectedLanguages.length + ')'"></span>
+          </span>
+          <input type="text" x-model="languageSearch" placeholder="Search languages…"
+            class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
+            <template x-for="lang in filteredLanguages" :key="lang.name">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
+                <input type="checkbox" :value="lang.name" x-model="selectedLanguages"
+                  @change="applyFilters()" class="accent-indigo-600 shrink-0" />
+                <span x-text="lang.name" class="truncate"></span>
+                <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + lang.count + ')'"></span>
+              </label>
+            </template>
+            <p x-show="filteredLanguages.length === 0" class="text-xs text-gray-400 px-1 py-1">No languages found.</p>
+          </div>
+        </div>
+
+        <!-- Publication Types -->
+        <div class="flex flex-col gap-1.5">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Publication Types
+            <span x-show="selectedPublicationTypes.length > 0" class="normal-case font-normal text-indigo-600"
+              x-text="'(' + selectedPublicationTypes.length + ')'"></span>
+          </span>
+          <input type="text" x-model="publicationTypeSearch" placeholder="Search types…"
+            class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
+            <template x-for="pt in filteredPublicationTypes" :key="pt.name">
+              <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
+                <input type="checkbox" :value="pt.name" x-model="selectedPublicationTypes"
+                  @change="applyFilters()" class="accent-indigo-600 shrink-0" />
+                <span x-text="pt.name" class="truncate"></span>
+                <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + pt.count + ')'"></span>
+              </label>
+            </template>
+            <p x-show="filteredPublicationTypes.length === 0" class="text-xs text-gray-400 px-1 py-1">No types found.</p>
+          </div>
+        </div>
+
       </div>
     </aside>
 
@@ -192,10 +236,16 @@
         filterYearTo: '',
         selectedAuthors: [],
         selectedKeywords: [],
+        selectedLanguages: [],
+        selectedPublicationTypes: [],
         availableAuthors: [],
         availableKeywords: [],
+        availableLanguages: [],
+        availablePublicationTypes: [],
         authorSearch: '',
         keywordSearch: '',
+        languageSearch: '',
+        publicationTypeSearch: '',
         results: [],
         total: 0,
         page: 1,
@@ -214,6 +264,8 @@
           if (this.filterYearTo)   n++;
           n += this.selectedAuthors.length;
           n += this.selectedKeywords.length;
+          n += this.selectedLanguages.length;
+          n += this.selectedPublicationTypes.length;
           return n;
         },
 
@@ -229,6 +281,18 @@
           return this.availableKeywords.filter(k => k.name.toLowerCase().includes(q));
         },
 
+        get filteredLanguages() {
+          if (!this.languageSearch) return this.availableLanguages;
+          const q = this.languageSearch.toLowerCase();
+          return this.availableLanguages.filter(l => l.name.toLowerCase().includes(q));
+        },
+
+        get filteredPublicationTypes() {
+          if (!this.publicationTypeSearch) return this.availablePublicationTypes;
+          const q = this.publicationTypeSearch.toLowerCase();
+          return this.availablePublicationTypes.filter(pt => pt.name.toLowerCase().includes(q));
+        },
+
         async init() {
           // Load publications first so the user sees results immediately,
           // then load filter options in the background.
@@ -238,12 +302,16 @@
 
         async loadFilterOptions() {
           try {
-            const [authorsRes, keywordsRes] = await Promise.all([
+            const [authorsRes, keywordsRes, languagesRes, pubTypesRes] = await Promise.all([
               fetch('/api/authors/filter-options'),
-              fetch('/api/keywords/filter-options')
+              fetch('/api/keywords/filter-options'),
+              fetch('/api/languages/filter-options'),
+              fetch('/api/publication-types/filter-options')
             ]);
             this.availableAuthors  = await authorsRes.json();
             this.availableKeywords = await keywordsRes.json();
+            this.availableLanguages = await languagesRes.json();
+            this.availablePublicationTypes = await pubTypesRes.json();
           } catch {}
         },
 
@@ -252,6 +320,8 @@
           if (this.filterYearTo)   params.append('yearTo',   this.filterYearTo);
           this.selectedAuthors.forEach(a  => params.append('authors',  a));
           this.selectedKeywords.forEach(k => params.append('keywords', k));
+          this.selectedLanguages.forEach(l => params.append('languages', l));
+          this.selectedPublicationTypes.forEach(pt => params.append('publicationTypes', pt));
         },
 
         async loadAll() {
@@ -314,8 +384,12 @@
           this.filterYearTo   = '';
           this.selectedAuthors  = [];
           this.selectedKeywords = [];
+          this.selectedLanguages = [];
+          this.selectedPublicationTypes = [];
           this.authorSearch   = '';
           this.keywordSearch  = '';
+          this.languageSearch = '';
+          this.publicationTypeSearch = '';
           this.page = 1;
           await this.loadAll();
         },

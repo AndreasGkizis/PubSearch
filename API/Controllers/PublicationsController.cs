@@ -18,15 +18,18 @@ public class PublicationsController(PublicationService publicationService, IFile
         [FromQuery] int?     yearFrom = null,
         [FromQuery] int?     yearTo   = null,
         [FromQuery] string[]? authors  = null,
-        [FromQuery] string[]? keywords = null)
+        [FromQuery] string[]? keywords = null,
+        [FromQuery] string[]? languages = null,
+        [FromQuery] string[]? publicationTypes = null)
     {
         if (page < 1)    page     = 1;
         if (pageSize < 1 || pageSize > 20) pageSize = 20;
 
         var hasFilters = yearFrom.HasValue || yearTo.HasValue
-            || (authors?.Length > 0) || (keywords?.Length > 0);
+            || (authors?.Length > 0) || (keywords?.Length > 0)
+            || (languages?.Length > 0) || (publicationTypes?.Length > 0);
         var filters = hasFilters
-            ? new SearchFilters(yearFrom, yearTo, authors, keywords)
+            ? new SearchFilters(yearFrom, yearTo, authors, keywords, languages, publicationTypes)
             : null;
 
         var (items, total) = await publicationService.GetSummariesAsync(page, pageSize, filters);

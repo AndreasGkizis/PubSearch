@@ -16,6 +16,8 @@ builder.Services.AddScoped<CacheService>();
 builder.Services.AddScoped<PublicationService>();
 builder.Services.AddScoped<AuthorService>();
 builder.Services.AddScoped<KeywordService>();
+builder.Services.AddScoped<LanguageService>();
+builder.Services.AddScoped<PublicationTypeService>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
@@ -33,6 +35,8 @@ using (var scope = app.Services.CreateScope())
     var cacheService = scope.ServiceProvider.GetRequiredService<CacheService>();
     await cacheService.RefreshAuthorFilterOptionsAsync();
     await cacheService.RefreshKeywordFilterOptionsAsync();
+    await cacheService.RefreshLanguageFilterOptionsAsync();
+    await cacheService.RefreshPublicationTypeFilterOptionsAsync();
 }
 
 // ── Ensure PDF storage folder exists ──────────────────────────────────────

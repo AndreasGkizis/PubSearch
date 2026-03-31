@@ -28,6 +28,8 @@ public static class DependencyResolver
         services.AddScoped<IPublicationRepository, PublicationRepository>();
         services.AddScoped<IAuthorRepository, AuthorRepository>();
         services.AddScoped<IKeywordRepository, KeywordRepository>();
+        services.AddScoped<ILanguageRepository, LanguageRepository>();
+        services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
         services.AddScoped<ISearchService, MssqlSearchService>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();

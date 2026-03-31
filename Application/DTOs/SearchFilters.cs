@@ -4,4 +4,6 @@ public record SearchFilters(
     int? YearFrom,
     int? YearTo,
     IReadOnlyList<string>? Authors,
-    IReadOnlyList<string>? Keywords);
+    IReadOnlyList<string>? Keywords,
+    IReadOnlyList<string>? Languages,
+    IReadOnlyList<string>? PublicationTypes);

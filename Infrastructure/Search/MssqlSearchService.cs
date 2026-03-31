@@ -30,6 +30,12 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
         if (filters.Keywords is { Count: > 0 })
             q = q.Where(p => p.Keywords.Any(k => filters.Keywords.Contains(k.Value)));
 
+        if (filters.Languages is { Count: > 0 })
+            q = q.Where(p => p.Languages.Any(l => filters.Languages.Contains(l.Value)));
+
+        if (filters.PublicationTypes is { Count: > 0 })
+            q = q.Where(p => p.PublicationTypes.Any(pt => filters.PublicationTypes.Contains(pt.Value)));
+
         var total = await q.CountAsync();
         var items = await q
             .OrderByDescending(p => p.LastModified)
@@ -45,6 +51,12 @@ public class MssqlSearchService(AppDbCntx context) : ISearchService
                 Year = p.Year,
                 Keywords = p.Keywords.Any()
                     ? string.Join(", ", p.Keywords.Select(k => k.Value))
+                    : null,
+                Languages = p.Languages.Any()
+                    ? string.Join(", ", p.Languages.Select(l => l.Value))
+                    : null,
+                PublicationTypes = p.PublicationTypes.Any()
+                    ? string.Join(", ", p.PublicationTypes.Select(pt => pt.Value))
                     : null,
                 AbstractSnippet = p.Abstract != null && p.Abstract.Length > 200
                     ? p.Abstract.Substring(0, 200) + "…"

@@ -51,8 +51,26 @@
       <div x-show="pub?.keywords">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Keywords</p>
         <div class="flex flex-wrap gap-1">
-          <template x-for="kw in splitKeywords(pub?.keywords)" :key="kw">
+          <template x-for="kw in splitCsv(pub?.keywords)" :key="kw">
             <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full" x-text="kw"></span>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="pub?.languages">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Languages</p>
+        <div class="flex flex-wrap gap-1">
+          <template x-for="lang in splitCsv(pub?.languages)" :key="lang">
+            <span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full" x-text="lang"></span>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="pub?.publicationTypes">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Publication Types</p>
+        <div class="flex flex-wrap gap-1">
+          <template x-for="pt in splitCsv(pub?.publicationTypes)" :key="pt">
+            <span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full" x-text="pt"></span>
           </template>
         </div>
       </div>
@@ -104,9 +122,9 @@
           }
         },
 
-        splitKeywords(kw) {
-          if (!kw) return [];
-          return kw.split(',').map(s => s.trim()).filter(Boolean);
+        splitCsv(val) {
+          if (!val) return [];
+          return val.split(',').map(s => s.trim()).filter(Boolean);
         }
       };
     }

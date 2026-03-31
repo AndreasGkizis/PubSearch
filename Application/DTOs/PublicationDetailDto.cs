@@ -7,6 +7,8 @@ public record PublicationDetailDto
     public string? Abstract { get; init; }
     public string? Body { get; init; }
     public string? Keywords { get; init; }
+    public string? Languages { get; init; }
+    public string? PublicationTypes { get; init; }
     public int? Year { get; init; }
     public string? DOI { get; init; }
     public string? PdfFileName { get; init; }

@@ -41,6 +41,25 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
         "Microclimate Monitoring"
     ];
 
+    private static readonly string[] LanguagePool =
+    [
+        "English",
+        "French",
+        "German",
+        "Arabic",
+        "Spanish",
+        "Italian"
+    ];
+
+    private static readonly string[] PublicationTypePool =
+    [
+        "Journal",
+        "Book",
+        "Conference Paper",
+        "Thesis",
+        "Report"
+    ];
+
     private static readonly string[] TitlePrefixes =
     [
         "Advances in",
@@ -135,16 +154,20 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
 
         var authors = GenerateAuthors(1000);
         var keywords = GenerateKeywords(KeywordPool.Length);
-        var publications = GeneratePublications(50000, authors, keywords);
+        var languages = GenerateLanguages(LanguagePool.Length);
+        var publicationTypes = GeneratePublicationTypes(PublicationTypePool.Length);
+        var publications = GeneratePublications(50000, authors, keywords, languages, publicationTypes);
 
         context.Authors.AddRange(authors);
         context.Keywords.AddRange(keywords);
+        context.Languages.AddRange(languages);
+        context.PublicationTypes.AddRange(publicationTypes);
         context.Publications.AddRange(publications);
 
         await context.SaveChangesAsync();
         logger.LogInformation(
-            "Seeded {Authors} authors, {Keywords} keywords, {Publications} publications.",
-            authors.Count, keywords.Count, publications.Count);
+            "Seeded {Authors} authors, {Keywords} keywords, {Languages} languages, {PublicationTypes} publication types, {Publications} publications.",
+            authors.Count, keywords.Count, languages.Count, publicationTypes.Count, publications.Count);
     }
 
     private List<Author> GenerateAuthors(int count)
@@ -173,8 +196,35 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
         }).ToList();
     }
 
+    private List<Language> GenerateLanguages(int count)
+    {
+        var faker = new Faker();
+        var selected = faker.PickRandom(LanguagePool, count).ToList();
+
+        return selected.Select(value => new Language
+        {
+            Value = value,
+            CreatedAt = FixedTimestamp,
+            LastModified = FixedTimestamp
+        }).ToList();
+    }
+
+    private List<PublicationType> GeneratePublicationTypes(int count)
+    {
+        var faker = new Faker();
+        var selected = faker.PickRandom(PublicationTypePool, count).ToList();
+
+        return selected.Select(value => new PublicationType
+        {
+            Value = value,
+            CreatedAt = FixedTimestamp,
+            LastModified = FixedTimestamp
+        }).ToList();
+    }
+
     private List<Publication> GeneratePublications(
-        int count, List<Author> authors, List<Keyword> keywords)
+        int count, List<Author> authors, List<Keyword> keywords,
+        List<Language> languages, List<PublicationType> publicationTypes)
     {
         var faker = new Faker<Publication>()
             .RuleFor(p => p.Title, f =>
@@ -187,6 +237,10 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
                 f.PickRandom(authors, f.Random.Int(1, 3)).ToList())
             .RuleFor(p => p.Keywords, f =>
                 f.PickRandom(keywords, f.Random.Int(1, 4)).ToList())
+            .RuleFor(p => p.Languages, f =>
+                f.PickRandom(languages, f.Random.Int(1, 2)).ToList())
+            .RuleFor(p => p.PublicationTypes, f =>
+                new List<PublicationType> { f.PickRandom(publicationTypes) })
             .RuleFor(p => p.CreatedAt, _ => FixedTimestamp)
             .RuleFor(p => p.LastModified, _ => FixedTimestamp);
 
