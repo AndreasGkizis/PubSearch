@@ -1,11 +1,11 @@
 namespace ResearchPublications.Application.DTOs;
 
-public class AuthorManagementDto
+public record AuthorManagementDto
 {
-    public int Id { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? Email { get; set; }
-    public int PublicationCount { get; set; }
+    public int Id { get; init; }
+    public string FullName { get; init; } = string.Empty;
+    public string FirstName { get; init; } = string.Empty;
+    public string LastName { get; init; } = string.Empty;
+    public string? Email { get; init; }
+    public int PublicationCount { get; init; }
 }

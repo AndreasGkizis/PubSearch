@@ -1,23 +1,23 @@
 namespace ResearchPublications.Application.DTOs;
 
-public class PublicationDetailDto
+public record PublicationDetailDto
 {
-    public int Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Abstract { get; set; }
-    public string? Body { get; set; }
-    public string? Keywords { get; set; }
-    public int? Year { get; set; }
-    public string? DOI { get; set; }
-    public string? PdfFileName { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime LastModified { get; set; }
-    public List<AuthorDto> Authors { get; set; } = [];
+    public int Id { get; init; }
+    public string Title { get; init; } = string.Empty;
+    public string? Abstract { get; init; }
+    public string? Body { get; init; }
+    public string? Keywords { get; init; }
+    public int? Year { get; init; }
+    public string? DOI { get; init; }
+    public string? PdfFileName { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime LastModified { get; init; }
+    public List<AuthorDto> Authors { get; init; } = [];
 }
 
-public class AuthorDto
+public record AuthorDto
 {
-    public int Id { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string? Email { get; set; }
+    public int Id { get; init; }
+    public string FullName { get; init; } = string.Empty;
+    public string? Email { get; init; }
 }
