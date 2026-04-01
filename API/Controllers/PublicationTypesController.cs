@@ -28,16 +28,17 @@ public class PublicationTypesController(PublicationTypeService publicationTypeSe
         return Ok(items);
     }
 
-    // GET /api/publication-types?page=1&pageSize=20
+    // GET /api/publication-types?page=1&pageSize=20&q=jour
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? q = null)
     {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-        var (items, total) = await publicationTypeService.GetAllAsync(page, pageSize);
+        var (items, total) = await publicationTypeService.GetAllAsync(page, pageSize, q);
         return Ok(new { items, total, page, pageSize });
     }
 

@@ -6,11 +6,17 @@ namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
 public class KeywordRepository(AppDbCntx context) : IKeywordRepository
 {
-    public async Task<(IEnumerable<Keyword> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<Keyword> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var query = context.Keywords
-            .AsNoTracking()
-            .OrderBy(k => k.Value);
+        var baseQuery = context.Keywords.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            baseQuery = baseQuery.Where(k => k.Value.ToLower().Contains(q));
+        }
+
+        var query = baseQuery.OrderBy(k => k.Value);
 
         var total = await query.CountAsync();
         var items = await query

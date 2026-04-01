@@ -6,11 +6,17 @@ namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
 public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepository
 {
-    public async Task<(IEnumerable<PublicationType> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<PublicationType> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var query = context.PublicationTypes
-            .AsNoTracking()
-            .OrderBy(pt => pt.Value);
+        var baseQuery = context.PublicationTypes.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            baseQuery = baseQuery.Where(pt => pt.Value.ToLower().Contains(q));
+        }
+
+        var query = baseQuery.OrderBy(pt => pt.Value);
 
         var total = await query.CountAsync();
         var items = await query

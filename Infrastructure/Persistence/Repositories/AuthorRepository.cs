@@ -6,11 +6,19 @@ namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
 public class AuthorRepository(AppDbCntx context) : IAuthorRepository
 {
-    public async Task<(IEnumerable<Author> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<Author> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var query = context.Authors
-            .AsNoTracking()
-            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName);
+        var baseQuery = context.Authors.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            baseQuery = baseQuery.Where(a =>
+                (a.FirstName + " " + (a.MiddleName ?? "") + " " + a.LastName).ToLower().Contains(q)
+                || (a.Email != null && a.Email.ToLower().Contains(q)));
+        }
+
+        var query = baseQuery.OrderBy(a => a.LastName).ThenBy(a => a.FirstName);
 
         var total = await query.CountAsync();
         var items = await query

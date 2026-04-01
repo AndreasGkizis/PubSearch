@@ -4,7 +4,7 @@ namespace ResearchPublications.Domain.Interfaces;
 
 public interface IPublicationTypeRepository
 {
-    Task<(IEnumerable<PublicationType> Items, int TotalCount)> GetAllAsync(int page, int pageSize);
+    Task<(IEnumerable<PublicationType> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null);
     Task<PublicationType?> GetByIdAsync(int id);
     Task<PublicationType?> GetByValueAsync(string value);
     Task<int> CreateAsync(PublicationType publicationType);

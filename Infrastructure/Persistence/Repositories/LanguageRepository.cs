@@ -6,11 +6,17 @@ namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
 public class LanguageRepository(AppDbCntx context) : ILanguageRepository
 {
-    public async Task<(IEnumerable<Language> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<Language> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var query = context.Languages
-            .AsNoTracking()
-            .OrderBy(l => l.Value);
+        var baseQuery = context.Languages.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            baseQuery = baseQuery.Where(l => l.Value.ToLower().Contains(q));
+        }
+
+        var query = baseQuery.OrderBy(l => l.Value);
 
         var total = await query.CountAsync();
         var items = await query

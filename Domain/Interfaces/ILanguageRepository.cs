@@ -4,7 +4,7 @@ namespace ResearchPublications.Domain.Interfaces;
 
 public interface ILanguageRepository
 {
-    Task<(IEnumerable<Language> Items, int TotalCount)> GetAllAsync(int page, int pageSize);
+    Task<(IEnumerable<Language> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null);
     Task<Language?> GetByIdAsync(int id);
     Task<Language?> GetByValueAsync(string value);
     Task<int> CreateAsync(Language language);

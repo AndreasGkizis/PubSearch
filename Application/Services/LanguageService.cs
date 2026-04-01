@@ -7,9 +7,9 @@ namespace ResearchPublications.Application.Services;
 
 public class LanguageService(ILanguageRepository repository, CacheService cacheService)
 {
-    public async Task<(IEnumerable<LanguageManagementDto> Items, int TotalCount)> GetAllAsync(int page, int pageSize)
+    public async Task<(IEnumerable<LanguageManagementDto> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var (items, total) = await repository.GetAllAsync(page, pageSize);
+        var (items, total) = await repository.GetAllAsync(page, pageSize, search);
         return (items.Select(ToDto), total);
     }
 
