@@ -2,14 +2,18 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using ResearchPublications.Application.DTOs;
 using ResearchPublications.Application.Interfaces;
+using ResearchPublications.Infrastructure.Search;
+using Typesense;
 
 namespace ResearchPublications.API.Controllers;
 
 [ApiController]
 [Route("api/search")]
-public class SearchController(IServiceProvider serviceProvider) : ControllerBase
+public class SearchController(IServiceProvider serviceProvider, ITypesenseClient typesense) : ControllerBase
 {
     private static readonly HashSet<string> ValidProviders = ["typesense", "mssql"];
+    private const string CollectionName = "publications";
+    private static readonly HashSet<string> ValidFacetFields = ["authors", "keywords", "languages", "publication_types"];
 
     [HttpGet]
     public async Task<IActionResult> Search(
@@ -42,5 +46,35 @@ public class SearchController(IServiceProvider serviceProvider) : ControllerBase
         sw.Stop();
 
         return Ok(new { items, total, page, pageSize, provider, elapsedMs = sw.ElapsedMilliseconds });
+    }
+
+    [HttpGet("facets")]
+    public async Task<IActionResult> FacetSearch(
+        [FromQuery] string field,
+        [FromQuery] string q = "")
+    {
+        if (string.IsNullOrWhiteSpace(field) || !ValidFacetFields.Contains(field))
+            return BadRequest(new { error = $"Invalid field. Use one of: {string.Join(", ", ValidFacetFields)}" });
+
+        var searchParams = new SearchParameters("*", "title")
+        {
+            FacetBy = field,
+            FacetQuery = $"{field}:{q}",
+            MaxFacetValues = 50,
+            PerPage = 0,
+        };
+
+        var result = await typesense.Search<PublicationDocument>(CollectionName, searchParams);
+
+        var facetCounts = result.FacetCounts?
+            .FirstOrDefault(f => f.FieldName == field)?
+            .Counts ?? [];
+
+        return Ok(facetCounts.Select(c => new
+        {
+            name = c.Value,
+            count = c.Count,
+            highlighted = c.Highlighted
+        }));
     }
 }
