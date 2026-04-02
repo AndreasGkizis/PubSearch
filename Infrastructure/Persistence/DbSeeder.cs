@@ -1,11 +1,13 @@
+using System.Text;
 using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ResearchPublications.Domain.Entities;
+using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence;
 
-public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
+public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSeeder> logger)
 {
     private const int Seed = 12345;
 
@@ -38,7 +40,84 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
         "Environmental Degradation",
         "Salt Crystallization",
         "Opus Vermiculatum",
-        "Microclimate Monitoring"
+        "Microclimate Monitoring",
+        "Fresco Restoration",
+        "Heritage Site Management",
+        "Ceramic Analysis",
+        "Pigment Identification",
+        "Mortar Characterization",
+        "Non-Destructive Testing",
+        "X-Ray Fluorescence",
+        "Raman Spectroscopy",
+        "Petrographic Analysis",
+        "Scanning Electron Microscopy",
+        "3D Laser Scanning",
+        "GIS Mapping",
+        "Remote Sensing",
+        "Stratigraphic Analysis",
+        "Wall Painting Conservation",
+        "Underwater Archaeology",
+        "Ethnoarchaeology",
+        "Museum Conservation",
+        "Artifact Preservation",
+        "Stone Weathering",
+        "Biological Colonization",
+        "Biocide Treatment",
+        "Freeze-Thaw Resistance",
+        "Thermal Cycling",
+        "Moisture Migration",
+        "Rising Damp",
+        "Capillary Action",
+        "Hydraulic Lime",
+        "Pozzolanic Materials",
+        "Portland Cement Repair",
+        "Injection Grouting",
+        "Consolidation Resins",
+        "Acrylic Polymers",
+        "Silicone Treatments",
+        "Nanoparticle Consolidants",
+        "Bio-Based Consolidants",
+        "Sacrificial Layers",
+        "Protective Sheltering",
+        "Reburial Techniques",
+        "Climate Change Adaptation",
+        "Visitor Impact Assessment",
+        "Site Interpretation",
+        "Community Engagement",
+        "Intangible Heritage",
+        "Conservation Ethics",
+        "Minimal Intervention",
+        "Reversibility Principle",
+        "Authenticity Assessment",
+        "Condition Mapping",
+        "Decay Pattern Analysis",
+        "Color Measurement",
+        "Spectrophotometry",
+        "Infrared Thermography",
+        "Ground Penetrating Radar",
+        "Ultrasonic Testing",
+        "Mechanical Testing",
+        "Porosity Measurement",
+        "Water Absorption Testing",
+        "Adhesion Strength",
+        "Compressive Strength",
+        "Accelerated Aging",
+        "Natural Aging Studies",
+        "Case Study Documentation",
+        "Conservation Database",
+        "Open Access Publishing",
+        "Interdisciplinary Methods",
+        "Training Programs",
+        "Capacity Building",
+        "Risk Assessment",
+        "Disaster Preparedness",
+        "Post-Earthquake Conservation",
+        "Flood Damage Mitigation",
+        "Fire Damage Assessment",
+        "Vandalism Prevention",
+        "Looting Prevention",
+        "Legal Frameworks",
+        "International Conventions"
     ];
 
     private static readonly string[] LanguagePool =
@@ -152,11 +231,13 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
 
         Randomizer.Seed = new Random(Seed);
 
-        var authors = GenerateAuthors(1000);
-        var keywords = GenerateKeywords(KeywordPool.Length);
+        var authors = GenerateAuthors(50);
+        var keywords = GenerateKeywords(100);
         var languages = GenerateLanguages(LanguagePool.Length);
         var publicationTypes = GeneratePublicationTypes(PublicationTypePool.Length);
-        var publications = GeneratePublications(50000, authors, keywords, languages, publicationTypes);
+        var publications = GeneratePublications(150, authors, keywords, languages, publicationTypes);
+
+        await GeneratePdfFilesAsync(publications);
 
         context.Authors.AddRange(authors);
         context.Keywords.AddRange(keywords);
@@ -268,6 +349,52 @@ public class DbSeeder(AppDbCntx context, ILogger<DbSeeder> logger)
         }
 
         return abstractText;
+    }
+
+    private async Task GeneratePdfFilesAsync(List<Publication> publications)
+    {
+        foreach (var pub in publications)
+        {
+            var safeName = SanitizeFileName(pub.Title) + ".pdf";
+            var pdfBytes = GenerateMinimalPdf(pub.Title);
+            using var stream = new MemoryStream(pdfBytes);
+            pub.PdfFileName = await fileService.SavePdfAsync(stream, safeName);
+        }
+
+        logger.LogInformation("Generated {Count} PDF files.", publications.Count);
+    }
+
+    private static string SanitizeFileName(string title)
+    {
+        var safe = title.ToLowerInvariant()
+            .Replace(' ', '-');
+
+        foreach (var c in Path.GetInvalidFileNameChars())
+            safe = safe.Replace(c, '_');
+
+        return safe.Length > 80 ? safe[..80] : safe;
+    }
+
+    /// <summary>
+    /// Generates a minimal valid PDF containing the publication title on a single page.
+    /// </summary>
+    private static byte[] GenerateMinimalPdf(string title)
+    {
+        // Escape special PDF string characters
+        var escaped = title.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+
+        var pdf = new StringBuilder();
+        pdf.Append("%PDF-1.4\n");
+        pdf.Append("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
+        pdf.Append("2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n");
+        pdf.Append("3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n");
+
+        var stream = $"BT /F1 12 Tf 72 720 Td ({escaped}) Tj ET";
+        pdf.Append($"4 0 obj<</Length {stream.Length}>>stream\n{stream}\nendstream endobj\n");
+        pdf.Append("5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n");
+        pdf.Append("xref\n0 6\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n0\n%%EOF\n");
+
+        return Encoding.ASCII.GetBytes(pdf.ToString());
     }
 
     private static int WordCount(string text) =>
