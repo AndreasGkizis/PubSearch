@@ -2,3 +2,7 @@
 
 # CS0108: Member hides inherited member; missing new keyword
 dotnet_diagnostic.CS0108.severity = error
+
+[Infrastructure/Persistence/Repositories/**.cs]
+# CA1862: Prefer StringComparison overload — not translatable by EF Core to SQL
+dotnet_diagnostic.CA1862.severity = none
