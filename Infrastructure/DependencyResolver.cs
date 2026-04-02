@@ -44,7 +44,8 @@ public static class DependencyResolver
         services.AddScoped<IKeywordRepository, KeywordRepository>();
         services.AddScoped<ILanguageRepository, LanguageRepository>();
         services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
-        services.AddScoped<ISearchService, TypesenseSearchService>();
+        services.AddKeyedScoped<ISearchService, TypesenseSearchService>("typesense");
+        services.AddKeyedScoped<ISearchService, MssqlSearchService>("mssql");
         services.AddScoped<ITypesenseIndexingService, TypesenseIndexingService>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();
