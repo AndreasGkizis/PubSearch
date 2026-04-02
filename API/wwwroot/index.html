@@ -41,6 +41,14 @@
           class="px-2.5 py-1 rounded-md transition-colors">SQL</button>
       </div>
 
+      <!-- Fuzzy filter toggle -->
+      <div class="flex items-center bg-gray-100 rounded-lg p-0.5 text-xs font-medium shrink-0">
+        <button @click="fuzzyFilters = !fuzzyFilters; localStorage.setItem('fuzzyFilters', fuzzyFilters)"
+          :class="fuzzyFilters ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+          class="px-2.5 py-1 rounded-md transition-colors"
+          x-text="fuzzyFilters ? 'Fuzzy Filters' : 'Exact Filters'"></button>
+      </div>
+
       <button onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('theme',document.documentElement.classList.contains('dark')?'dark':'light')"
         class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 shrink-0" title="Toggle dark mode">
         <svg class="w-5 h-5 block dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -89,13 +97,14 @@
               x-text="'(' + selectedKeywords.length + ')'"></span>
           </span>
           <input type="text" x-model="keywordSearch" placeholder="Search keywords…"
+            @input.debounce.300ms="onFilterSearch('keywords', keywordSearch, '_filteredKeywords')"
             class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
           <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
             <template x-for="kw in filteredKeywords" :key="kw.name">
               <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
                 <input type="checkbox" :value="kw.name" x-model="selectedKeywords"
                   @change="applyFilters()" class="accent-indigo-600 shrink-0" />
-                <span x-html="highlightFilter(kw.name, keywordSearch)" class="truncate"></span>
+                <span x-html="kw.highlighted ? renderMarks(kw.highlighted) : highlightFilter(kw.name, keywordSearch)" class="truncate"></span>
                 <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + kw.count + ')'"></span>
               </label>
             </template>
@@ -111,13 +120,14 @@
               x-text="'(' + selectedAuthors.length + ')'"></span>
           </span>
           <input type="text" x-model="authorSearch" placeholder="Search authors…"
+            @input.debounce.300ms="onFilterSearch('authors', authorSearch, '_filteredAuthors')"
             class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
           <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
             <template x-for="author in filteredAuthors" :key="author.name">
               <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
                 <input type="checkbox" :value="author.name" x-model="selectedAuthors"
                   @change="applyFilters()" class="accent-indigo-600 shrink-0" />
-                <span x-html="highlightFilter(author.name, authorSearch)" class="truncate"></span>
+                <span x-html="author.highlighted ? renderMarks(author.highlighted) : highlightFilter(author.name, authorSearch)" class="truncate"></span>
                 <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + author.count + ')'"></span>
               </label>
             </template>
@@ -133,13 +143,14 @@
               x-text="'(' + selectedLanguages.length + ')'"></span>
           </span>
           <input type="text" x-model="languageSearch" placeholder="Search languages…"
+            @input.debounce.300ms="onFilterSearch('languages', languageSearch, '_filteredLanguages')"
             class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
           <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
             <template x-for="lang in filteredLanguages" :key="lang.name">
               <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
                 <input type="checkbox" :value="lang.name" x-model="selectedLanguages"
                   @change="applyFilters()" class="accent-indigo-600 shrink-0" />
-                <span x-html="highlightFilter(lang.name, languageSearch)" class="truncate"></span>
+                <span x-html="lang.highlighted ? renderMarks(lang.highlighted) : highlightFilter(lang.name, languageSearch)" class="truncate"></span>
                 <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + lang.count + ')'"></span>
               </label>
             </template>
@@ -155,13 +166,14 @@
               x-text="'(' + selectedPublicationTypes.length + ')'"></span>
           </span>
           <input type="text" x-model="publicationTypeSearch" placeholder="Search types…"
+            @input.debounce.300ms="onFilterSearch('publication_types', publicationTypeSearch, '_filteredPublicationTypes')"
             class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
           <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
             <template x-for="pt in filteredPublicationTypes" :key="pt.name">
               <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 rounded px-1 py-0.5">
                 <input type="checkbox" :value="pt.name" x-model="selectedPublicationTypes"
                   @change="applyFilters()" class="accent-indigo-600 shrink-0" />
-                <span x-html="highlightFilter(pt.name, publicationTypeSearch)" class="truncate"></span>
+                <span x-html="pt.highlighted ? renderMarks(pt.highlighted) : highlightFilter(pt.name, publicationTypeSearch)" class="truncate"></span>
                 <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="'(' + pt.count + ')'"></span>
               </label>
             </template>
@@ -280,6 +292,11 @@
         keywordSearch: '',
         languageSearch: '',
         publicationTypeSearch: '',
+        _filteredAuthors: [],
+        _filteredKeywords: [],
+        _filteredLanguages: [],
+        _filteredPublicationTypes: [],
+        fuzzyFilters: localStorage.getItem('fuzzyFilters') === 'true',
         results: [],
         total: 0,
         page: 1,
@@ -307,24 +324,28 @@
 
         get filteredAuthors() {
           if (!this.authorSearch) return this.availableAuthors;
+          if (this.fuzzyFilters) return this._filteredAuthors;
           const q = this.authorSearch.toLowerCase();
           return this.availableAuthors.filter(a => a.name.toLowerCase().includes(q));
         },
 
         get filteredKeywords() {
           if (!this.keywordSearch) return this.availableKeywords;
+          if (this.fuzzyFilters) return this._filteredKeywords;
           const q = this.keywordSearch.toLowerCase();
           return this.availableKeywords.filter(k => k.name.toLowerCase().includes(q));
         },
 
         get filteredLanguages() {
           if (!this.languageSearch) return this.availableLanguages;
+          if (this.fuzzyFilters) return this._filteredLanguages;
           const q = this.languageSearch.toLowerCase();
           return this.availableLanguages.filter(l => l.name.toLowerCase().includes(q));
         },
 
         get filteredPublicationTypes() {
           if (!this.publicationTypeSearch) return this.availablePublicationTypes;
+          if (this.fuzzyFilters) return this._filteredPublicationTypes;
           const q = this.publicationTypeSearch.toLowerCase();
           return this.availablePublicationTypes.filter(pt => pt.name.toLowerCase().includes(q));
         },
@@ -349,6 +370,22 @@
             this.availableLanguages = await languagesRes.json();
             this.availablePublicationTypes = await pubTypesRes.json();
           } catch {}
+        },
+
+        async facetSearch(field, query, targetProp) {
+          if (!query.trim()) return;
+          try {
+            const params = new URLSearchParams({ field, q: query });
+            const res = await fetch('/api/search/facets?' + params);
+            const data = await res.json();
+            this[targetProp] = data.map(d => ({ name: d.name, count: d.count, highlighted: d.highlighted }));
+          } catch {}
+        },
+
+        onFilterSearch(field, query, targetProp) {
+          if (this.fuzzyFilters && query.trim()) {
+            this.facetSearch(field, query, targetProp);
+          }
         },
 
         buildFilterParams(params) {
@@ -493,6 +530,15 @@
           const escaped = filterQuery.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const re = new RegExp('(' + escaped + ')', 'gi');
           return safe.replace(re, '<mark class="bg-yellow-200 rounded px-0.5">$1</mark>');
+        },
+
+        renderMarks(text) {
+          if (!text) return '';
+          return text.split(/(<mark>|<\/mark>)/g).map(part => {
+            if (part === '<mark>') return '<mark class="bg-yellow-200 rounded px-0.5">';
+            if (part === '</mark>') return '</mark>';
+            return this.escapeHtml(part);
+          }).join('');
         }
       };
     }
