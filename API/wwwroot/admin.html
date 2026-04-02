@@ -664,20 +664,80 @@
           </div>
         </div>
 
-        <!-- Languages (comma-separated text input) -->
-        <div>
+        <!-- Languages searchable dropdown -->
+        <div class="relative" @click.outside="langDropdownOpen = false">
           <label class="block text-xs font-semibold text-gray-500 mb-1">Languages</label>
-          <input type="text" x-model="form.languages" placeholder="e.g. English, French"
+          <!-- Selected language chips -->
+          <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="selectedLanguages.length > 0">
+            <template x-for="lang in selectedLanguages" :key="lang.id">
+              <span class="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full">
+                <span x-text="lang.value"></span>
+                <button type="button" @click="removeLanguage(lang.id)" class="hover:text-red-500 font-bold">&times;</button>
+              </span>
+            </template>
+          </div>
+          <!-- Search input -->
+          <input type="text" x-model="langSearch" @input.debounce.300ms="searchLanguages()"
+            @focus="if(langSearch.length > 0) langDropdownOpen = true"
+            placeholder="Search languages…"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-          <p class="text-xs text-gray-400 mt-0.5">Comma-separated values</p>
+          <!-- Dropdown results -->
+          <div x-show="langDropdownOpen && (langSearchResults.length > 0 || langSearch.trim().length > 0)"
+               class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <template x-for="lang in langSearchResults" :key="lang.id">
+              <button type="button" @click="selectLanguage(lang)"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 flex justify-between items-center"
+                :class="selectedLanguages.some(s => s.id === lang.id) ? 'opacity-40 pointer-events-none' : ''">
+                <span x-text="lang.value"></span>
+                <span class="text-xs text-gray-400" x-text="lang.publicationCount + ' pubs'"></span>
+              </button>
+            </template>
+            <!-- Create new language option -->
+            <button type="button"
+              x-show="langSearch.trim().length > 0 && !langSearchResults.some(l => l.value.toLowerCase() === langSearch.trim().toLowerCase())"
+              @click="createAndSelectLanguage()"
+              class="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 border-t border-gray-100 font-medium">
+              + Create "<span x-text="langSearch.trim()"></span>"
+            </button>
+          </div>
         </div>
 
-        <!-- Publication Types (comma-separated text input) -->
-        <div>
+        <!-- Publication Types searchable dropdown -->
+        <div class="relative" @click.outside="ptDropdownOpen = false">
           <label class="block text-xs font-semibold text-gray-500 mb-1">Publication Types</label>
-          <input type="text" x-model="form.publicationTypes" placeholder="e.g. Journal, Conference Paper"
+          <!-- Selected publication type chips -->
+          <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="selectedPubTypes.length > 0">
+            <template x-for="pt in selectedPubTypes" :key="pt.id">
+              <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">
+                <span x-text="pt.value"></span>
+                <button type="button" @click="removePubType(pt.id)" class="hover:text-red-500 font-bold">&times;</button>
+              </span>
+            </template>
+          </div>
+          <!-- Search input -->
+          <input type="text" x-model="ptSearch" @input.debounce.300ms="searchPubTypes()"
+            @focus="if(ptSearch.length > 0) ptDropdownOpen = true"
+            placeholder="Search publication types…"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-          <p class="text-xs text-gray-400 mt-0.5">Comma-separated values</p>
+          <!-- Dropdown results -->
+          <div x-show="ptDropdownOpen && (ptSearchResults.length > 0 || ptSearch.trim().length > 0)"
+               class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <template x-for="pt in ptSearchResults" :key="pt.id">
+              <button type="button" @click="selectPubType(pt)"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 flex justify-between items-center"
+                :class="selectedPubTypes.some(s => s.id === pt.id) ? 'opacity-40 pointer-events-none' : ''">
+                <span x-text="pt.value"></span>
+                <span class="text-xs text-gray-400" x-text="pt.publicationCount + ' pubs'"></span>
+              </button>
+            </template>
+            <!-- Create new publication type option -->
+            <button type="button"
+              x-show="ptSearch.trim().length > 0 && !ptSearchResults.some(p => p.value.toLowerCase() === ptSearch.trim().toLowerCase())"
+              @click="createAndSelectPubType()"
+              class="w-full text-left px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 border-t border-gray-100 font-medium">
+              + Create "<span x-text="ptSearch.trim()"></span>"
+            </button>
+          </div>
         </div>
 
         <div>
@@ -1013,6 +1073,16 @@
         inlineAuthorError: null,
         creatingInlineAuthor: false,
 
+        selectedLanguages: [],
+        langSearch: '',
+        langSearchResults: [],
+        langDropdownOpen: false,
+
+        selectedPubTypes: [],
+        ptSearch: '',
+        ptSearchResults: [],
+        ptDropdownOpen: false,
+
         // ── Authors state ──
         authorsList: [],
         authorsTotal: 0,
@@ -1259,6 +1329,14 @@
           this.showInlineAuthorForm = false;
           this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
           this.inlineAuthorError = null;
+          this.selectedLanguages = [];
+          this.langSearch = '';
+          this.langSearchResults = [];
+          this.langDropdownOpen = false;
+          this.selectedPubTypes = [];
+          this.ptSearch = '';
+          this.ptSearchResults = [];
+          this.ptDropdownOpen = false;
           this.formError  = null;
           this.uploadError = null;
           this.showModal  = true;
@@ -1327,6 +1405,58 @@
             this.kwDropdownOpen = false;
             this.formError  = null;
             this.uploadError = null;
+            // Populate selected languages from comma-separated string
+            if (pub.languages) {
+              this.selectedLanguages = pub.languages.split(',').map((v, i) => ({
+                id: -(i + 1),
+                value: v.trim(),
+                publicationCount: 0
+              })).filter(l => l.value.length > 0);
+              for (let i = 0; i < this.selectedLanguages.length; i++) {
+                try {
+                  const sr = await fetch(`/api/languages/search?q=${encodeURIComponent(this.selectedLanguages[i].value)}&limit=5`);
+                  if (sr.ok) {
+                    const results = await sr.json();
+                    const exact = results.find(r => r.value.toLowerCase() === this.selectedLanguages[i].value.toLowerCase());
+                    if (exact) {
+                      this.selectedLanguages[i].id = exact.id;
+                      this.selectedLanguages[i].publicationCount = exact.publicationCount;
+                    }
+                  }
+                } catch {}
+              }
+            } else {
+              this.selectedLanguages = [];
+            }
+            this.langSearch = '';
+            this.langSearchResults = [];
+            this.langDropdownOpen = false;
+            // Populate selected publication types from comma-separated string
+            if (pub.publicationTypes) {
+              this.selectedPubTypes = pub.publicationTypes.split(',').map((v, i) => ({
+                id: -(i + 1),
+                value: v.trim(),
+                publicationCount: 0
+              })).filter(pt => pt.value.length > 0);
+              for (let i = 0; i < this.selectedPubTypes.length; i++) {
+                try {
+                  const sr = await fetch(`/api/publication-types/search?q=${encodeURIComponent(this.selectedPubTypes[i].value)}&limit=5`);
+                  if (sr.ok) {
+                    const results = await sr.json();
+                    const exact = results.find(r => r.value.toLowerCase() === this.selectedPubTypes[i].value.toLowerCase());
+                    if (exact) {
+                      this.selectedPubTypes[i].id = exact.id;
+                      this.selectedPubTypes[i].publicationCount = exact.publicationCount;
+                    }
+                  }
+                } catch {}
+              }
+            } else {
+              this.selectedPubTypes = [];
+            }
+            this.ptSearch = '';
+            this.ptSearchResults = [];
+            this.ptDropdownOpen = false;
             this.showModal  = true;
           } catch {}
         },
@@ -1412,6 +1542,118 @@
           } catch {}
         },
 
+        // ── Language search & select helpers ──────────────────────────────
+
+        async searchLanguages() {
+          const q = this.langSearch.trim();
+          if (q.length === 0) { this.langSearchResults = []; this.langDropdownOpen = false; return; }
+          try {
+            const res = await fetch(`/api/languages/search?q=${encodeURIComponent(q)}&limit=20`);
+            if (res.ok) this.langSearchResults = await res.json();
+          } catch { this.langSearchResults = []; }
+          this.langDropdownOpen = true;
+        },
+
+        selectLanguage(lang) {
+          if (!this.selectedLanguages.some(s => s.id === lang.id)) {
+            this.selectedLanguages.push({ ...lang });
+          }
+          this.langSearch = '';
+          this.langSearchResults = [];
+          this.langDropdownOpen = false;
+        },
+
+        removeLanguage(id) {
+          this.selectedLanguages = this.selectedLanguages.filter(l => l.id !== id);
+        },
+
+        async createAndSelectLanguage() {
+          const value = this.langSearch.trim();
+          if (!value) return;
+          try {
+            const res = await fetch('/api/languages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.selectedLanguages.push({ id: data.id, value, publicationCount: 0 });
+              this.langSearch = '';
+              this.langSearchResults = [];
+              this.langDropdownOpen = false;
+            } else if (res.status === 500) {
+              const sr = await fetch(`/api/languages/search?q=${encodeURIComponent(value)}&limit=5`);
+              if (sr.ok) {
+                const results = await sr.json();
+                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
+                if (exact && !this.selectedLanguages.some(s => s.id === exact.id)) {
+                  this.selectedLanguages.push(exact);
+                  this.langSearch = '';
+                  this.langSearchResults = [];
+                  this.langDropdownOpen = false;
+                }
+              }
+            }
+          } catch {}
+        },
+
+        // ── Publication Type search & select helpers ──────────────────────
+
+        async searchPubTypes() {
+          const q = this.ptSearch.trim();
+          if (q.length === 0) { this.ptSearchResults = []; this.ptDropdownOpen = false; return; }
+          try {
+            const res = await fetch(`/api/publication-types/search?q=${encodeURIComponent(q)}&limit=20`);
+            if (res.ok) this.ptSearchResults = await res.json();
+          } catch { this.ptSearchResults = []; }
+          this.ptDropdownOpen = true;
+        },
+
+        selectPubType(pt) {
+          if (!this.selectedPubTypes.some(s => s.id === pt.id)) {
+            this.selectedPubTypes.push({ ...pt });
+          }
+          this.ptSearch = '';
+          this.ptSearchResults = [];
+          this.ptDropdownOpen = false;
+        },
+
+        removePubType(id) {
+          this.selectedPubTypes = this.selectedPubTypes.filter(p => p.id !== id);
+        },
+
+        async createAndSelectPubType() {
+          const value = this.ptSearch.trim();
+          if (!value) return;
+          try {
+            const res = await fetch('/api/publication-types', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.selectedPubTypes.push({ id: data.id, value, publicationCount: 0 });
+              this.ptSearch = '';
+              this.ptSearchResults = [];
+              this.ptDropdownOpen = false;
+            } else if (res.status === 500) {
+              const sr = await fetch(`/api/publication-types/search?q=${encodeURIComponent(value)}&limit=5`);
+              if (sr.ok) {
+                const results = await sr.json();
+                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
+                if (exact && !this.selectedPubTypes.some(s => s.id === exact.id)) {
+                  this.selectedPubTypes.push(exact);
+                  this.ptSearch = '';
+                  this.ptSearchResults = [];
+                  this.ptDropdownOpen = false;
+                }
+              }
+            }
+          } catch {}
+        },
+
         // ── Author search & select helpers ────────────────────────────────
 
         async searchAuthors() {
@@ -1489,8 +1731,8 @@
             year:          this.form.year || null,
             doi:           this.form.doi  || null,
             keywords:      this.selectedKeywords.map(k => k.value).join(', ') || null,
-            languages:     this.form.languages || null,
-            publicationTypes: this.form.publicationTypes || null,
+            languages:     this.selectedLanguages.map(l => l.value).join(', ') || null,
+            publicationTypes: this.selectedPubTypes.map(pt => pt.value).join(', ') || null,
             abstract:      this.form.abstract || null,
             body:          this.form.body || null,
             pdfFileName:   this.form.pdfFileName || null,
