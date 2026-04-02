@@ -8,6 +8,8 @@ using ResearchPublications.Infrastructure.Persistence;
 using ResearchPublications.Infrastructure.Persistence.Repositories;
 using ResearchPublications.Infrastructure.Search;
 using ResearchPublications.Infrastructure.Settings;
+using Typesense;
+using Typesense.Setup;
 
 namespace ResearchPublications.Infrastructure;
 
@@ -25,12 +27,25 @@ public static class DependencyResolver
                 x => x.MigrationsAssembly("ResearchPublications.Infrastructure")
                        .MigrationsHistoryTable("__EFMigrationsHistory")));
 
+        // Typesense
+        var typesenseSettings = config.GetSection("TypesenseSettings").Get<TypesenseSettings>()
+            ?? throw new InvalidOperationException("TypesenseSettings section is missing from configuration.");
+
+        services.AddSingleton(typesenseSettings);
+
+        services.AddTypesenseClient(opts =>
+        {
+            opts.ApiKey = typesenseSettings.ApiKey;
+            opts.Nodes = [new Node(typesenseSettings.Host, typesenseSettings.Port.ToString(), typesenseSettings.Protocol)];
+        });
+
         services.AddScoped<IPublicationRepository, PublicationRepository>();
         services.AddScoped<IAuthorRepository, AuthorRepository>();
         services.AddScoped<IKeywordRepository, KeywordRepository>();
         services.AddScoped<ILanguageRepository, LanguageRepository>();
         services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
-        services.AddScoped<ISearchService, MssqlSearchService>();
+        services.AddScoped<ISearchService, TypesenseSearchService>();
+        services.AddScoped<ITypesenseIndexingService, TypesenseIndexingService>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();
 

@@ -10,5 +10,16 @@ services:
     volumes:
       - mssql_data:/var/opt/mssql
 
+  typesense:
+    image: typesense/typesense:27.1
+    environment:
+      TYPESENSE_API_KEY: "devkey123"
+      TYPESENSE_DATA_DIR: "/data"
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense_data:/data
+
 volumes:
   mssql_data:
+  typesense_data:

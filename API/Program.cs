@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ResearchPublications.API.Middleware;
+using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Application.Services;
 using ResearchPublications.Infrastructure;
 using ResearchPublications.Infrastructure.Persistence;
@@ -37,6 +38,11 @@ using (var scope = app.Services.CreateScope())
     await cacheService.RefreshKeywordFilterOptionsAsync();
     await cacheService.RefreshLanguageFilterOptionsAsync();
     await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+
+    // Initialize Typesense collection and index all publications
+    var indexingService = scope.ServiceProvider.GetRequiredService<ITypesenseIndexingService>();
+    await indexingService.EnsureCollectionExistsAsync();
+    await indexingService.IndexAllPublicationsAsync();
 }
 
 // ── Ensure PDF storage folder exists ──────────────────────────────────────
