@@ -19,7 +19,7 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
             FilterBy = BuildFilterBy(filters),
             Page = page,
             PerPage = pageSize,
-            HighlightFields = "title,abstract,body",
+            HighlightFields = "title,abstract,body,authors,keywords",
             HighlightStartTag = "<mark>",
             HighlightEndTag = "</mark>",
             HighlightAffixNumberOfTokens = 12,
@@ -36,10 +36,22 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
 
             var abstractHighlight = highlights.FirstOrDefault(h => h.Field == "abstract");
             var bodyHighlight = highlights.FirstOrDefault(h => h.Field == "body");
+            var titleHighlight = highlights.FirstOrDefault(h => h.Field == "title");
+            var authorsHighlight = highlights.FirstOrDefault(h => h.Field == "authors");
+            var keywordsHighlight = highlights.FirstOrDefault(h => h.Field == "keywords");
 
             string? snippet = abstractHighlight?.Snippet
                 ?? bodyHighlight?.Snippet
                 ?? (doc.Abstract.Length > 200 ? doc.Abstract[..200] + "\u2026" : NullIfEmpty(doc.Abstract));
+
+            // For array fields, Typesense returns Snippets (array) rather than Snippet (string)
+            var highlightedAuthors = authorsHighlight?.Snippets?.Count > 0
+                ? authorsHighlight.Snippets.ToList()
+                : null;
+
+            var highlightedKeywords = keywordsHighlight?.Snippets?.Count > 0
+                ? string.Join(", ", keywordsHighlight.Snippets)
+                : null;
 
             var score = 0.0;
             if (hit.TextMatchInfo?.Score is { } scoreStr && long.TryParse(scoreStr, out var parsedScore))
@@ -57,6 +69,9 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
                 Languages = doc.Languages.Length > 0 ? string.Join(", ", doc.Languages) : null,
                 PublicationTypes = doc.PublicationTypes.Length > 0 ? string.Join(", ", doc.PublicationTypes) : null,
                 AbstractSnippet = snippet,
+                HighlightedTitle = titleHighlight?.Snippet,
+                HighlightedAuthors = highlightedAuthors,
+                HighlightedKeywords = highlightedKeywords,
                 PdfFileName = NullIfEmpty(doc.PdfFileName),
                 Rank = score
             };

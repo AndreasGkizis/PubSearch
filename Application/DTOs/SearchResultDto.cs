@@ -10,6 +10,9 @@ public record SearchResultDto
     public string? Languages { get; init; }
     public string? PublicationTypes { get; init; }
     public string? AbstractSnippet { get; init; }
+    public string? HighlightedTitle { get; init; }
+    public List<string>? HighlightedAuthors { get; init; }
+    public string? HighlightedKeywords { get; init; }
     public string? PdfFileName { get; init; }
     public double Rank { get; init; }
 }
