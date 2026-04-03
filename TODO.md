@@ -1,4 +1,3 @@
 TODO:
-    1. add typsense for typo tolerant search [bonus]
-    1. unit tests
-    1. make year a slider
+    1. back button from vieew goes to search mode even if clicked from admin panel 
+    1. keyword aware ai generated summaries.
