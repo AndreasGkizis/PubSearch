@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — Research Publications</title>
-  <script>
-    if (localStorage.getItem('theme') === 'dark' ||
-        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    }
-  </script>
+  <title>Admin &ndash; Research Publications</title>
+  <script src="js/shared.js"></script>
+  <script>initTheme();</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link rel="stylesheet" href="dark-mode.css" />
+  <style>
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+  <script src="js/api.js"></script>
+  <script src="js/admin-crud.js"></script>
+  <script src="js/admin-app.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="adminApp()">
@@ -42,7 +45,7 @@
         type="search" x-model="query"
         @keyup.enter="searchPublications()"
         @input.debounce.400ms="onQueryInput()"
-        placeholder="Search titles, abstracts, keywords…"
+        placeholder="Search titles, abstracts, keywords ..."
         class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       <button x-show="activeTab === 'publications'" @click="searchPublications()"
         class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">Search</button>
@@ -66,7 +69,7 @@
         class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
         + Add Publication Type
       </button>
-      <button onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('theme',document.documentElement.classList.contains('dark')?'dark':'light')"
+      <button onclick="toggleDarkMode()"
         class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 shrink-0" title="Toggle dark mode">
         <svg class="w-5 h-5 block dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -78,7 +81,7 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6">
+  <main class="max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-4.5rem)] flex flex-col overflow-hidden">
 
     <!-- Loading -->
     <div x-show="loading" class="flex justify-center py-12">
@@ -93,12 +96,12 @@
          class="fixed bottom-6 right-6 bg-green-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg z-50"
          x-text="toast"></div>
 
-    <!-- ═══════════════ PUBLICATIONS TAB ═══════════════ -->
-    <div x-show="activeTab === 'publications' && !loading" class="flex gap-6">
+    <!-- === PUBLICATIONS TAB === -->
+    <div x-show="activeTab === 'publications' && !loading" class="flex gap-6 flex-1 min-h-0">
 
-      <!-- ── Left sidebar: Filters (1/4 width) ──────────────────────────── -->
-      <aside class="w-1/4 shrink-0">
-        <div class="bg-white border border-gray-200 rounded-xl p-5 sticky top-20 flex flex-col gap-6">
+      <!-- Left sidebar: Filters (1/4 width) -->
+      <aside class="w-1/4 shrink-0 overflow-y-auto scrollbar-hide">
+        <div class="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-6">
 
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-gray-700">Filters</span>
@@ -114,7 +117,7 @@
                 @input.debounce.400ms="applyFilters()"
                 placeholder="From"
                 class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-              <span class="text-gray-400">–</span>
+              <span class="text-gray-400">“</span>
               <input type="number" x-model="filterYearTo"
                 @input.debounce.400ms="applyFilters()"
                 placeholder="To"
@@ -129,7 +132,7 @@
               <span x-show="filterSelectedKeywords.length > 0" class="normal-case font-normal text-indigo-600"
                 x-text="'(' + filterSelectedKeywords.length + ')'"></span>
             </span>
-            <input type="text" x-model="keywordFilterSearch" placeholder="Search keywords…"
+            <input type="text" x-model="keywordFilterSearch" placeholder="Search keywords ..."
               class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
             <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
               <template x-for="kw in filteredFilterKeywords" :key="kw.name">
@@ -151,7 +154,7 @@
               <span x-show="filterSelectedAuthors.length > 0" class="normal-case font-normal text-indigo-600"
                 x-text="'(' + filterSelectedAuthors.length + ')'"></span>
             </span>
-            <input type="text" x-model="authorFilterSearch" placeholder="Search authors…"
+            <input type="text" x-model="authorFilterSearch" placeholder="Search authors ..."
               class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
             <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
               <template x-for="author in filteredFilterAuthors" :key="author.name">
@@ -173,7 +176,7 @@
               <span x-show="filterSelectedLanguages.length > 0" class="normal-case font-normal text-indigo-600"
                 x-text="'(' + filterSelectedLanguages.length + ')'"></span>
             </span>
-            <input type="text" x-model="languageFilterSearch" placeholder="Search languages…"
+            <input type="text" x-model="languageFilterSearch" placeholder="Search languages ..."
               class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
             <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
               <template x-for="lang in filteredFilterLanguages" :key="lang.name">
@@ -195,7 +198,7 @@
               <span x-show="filterSelectedPublicationTypes.length > 0" class="normal-case font-normal text-indigo-600"
                 x-text="'(' + filterSelectedPublicationTypes.length + ')'"></span>
             </span>
-            <input type="text" x-model="publicationTypeFilterSearch" placeholder="Search types…"
+            <input type="text" x-model="publicationTypeFilterSearch" placeholder="Search types ..."
               class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
             <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
               <template x-for="pt in filteredFilterPublicationTypes" :key="pt.name">
@@ -213,8 +216,8 @@
         </div>
       </aside>
 
-      <!-- ── Right content: Results (3/4 width) ─────────────────────────── -->
-      <div class="w-3/4 min-w-0">
+      <!-- Right content: Results (3/4 width) -->
+      <div class="w-3/4 min-w-0 overflow-y-auto scrollbar-hide">
 
         <!-- Status bar + top pagination -->
         <div class="flex items-center mb-4">
@@ -293,13 +296,13 @@
 
     </div><!-- /publications tab -->
 
-    <!-- ═══════════════ AUTHORS TAB ═══════════════ -->
-    <div x-show="activeTab === 'authors' && !loading">
+    <!-- === AUTHORS TAB === -->
+    <div x-show="activeTab === 'authors' && !loading" class="flex-1 min-h-0 overflow-y-auto">
 
       <div class="mb-4">
         <input type="search" x-model="authorsSearch"
           @input.debounce.400ms="authorsPage = 1; loadAuthors()"
-          placeholder="Search authors…"
+          placeholder="Search authors ..."
           class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3" />
       </div>
 
@@ -330,7 +333,7 @@
               <tr class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 text-gray-400" x-text="author.id"></td>
                 <td class="px-4 py-3 font-medium text-gray-800" x-text="[author.firstName, author.middleName, author.lastName].filter(Boolean).join(' ')"></td>
-                <td class="px-4 py-3 text-gray-500" x-text="author.email || '—'"></td>
+                <td class="px-4 py-3 text-gray-500" x-text="author.email || '–'"></td>
                 <td class="px-4 py-3 text-center text-gray-500" x-text="author.publicationCount"></td>
                 <td class="px-4 py-3 text-center flex justify-center gap-2">
                   <button @click="openEditAuthor(author)"
@@ -357,13 +360,13 @@
 
     </div><!-- /authors tab -->
 
-    <!-- ═══════════════ KEYWORDS TAB ═══════════════ -->
-    <div x-show="activeTab === 'keywords' && !loading">
+    <!-- === KEYWORDS TAB === -->
+    <div x-show="activeTab === 'keywords' && !loading" class="flex-1 min-h-0 overflow-y-auto">
 
       <div class="mb-4">
         <input type="search" x-model="keywordsSearch"
           @input.debounce.400ms="keywordsPage = 1; loadKeywords()"
-          placeholder="Search keywords…"
+          placeholder="Search keywords ..."
           class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3" />
       </div>
 
@@ -419,13 +422,13 @@
 
     </div><!-- /keywords tab -->
 
-    <!-- ═══════════════ LANGUAGES TAB ═══════════════ -->
-    <div x-show="activeTab === 'languages' && !loading">
+    <!-- === LANGUAGES TAB === -->
+    <div x-show="activeTab === 'languages' && !loading" class="flex-1 min-h-0 overflow-y-auto">
 
       <div class="mb-4">
         <input type="search" x-model="languagesSearch"
           @input.debounce.400ms="languagesPage = 1; loadLanguages()"
-          placeholder="Search languages…"
+          placeholder="Search languages ..."
           class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3" />
       </div>
 
@@ -481,13 +484,13 @@
 
     </div><!-- /languages tab -->
 
-    <!-- ═══════════════ PUBLICATION TYPES TAB ═══════════════ -->
-    <div x-show="activeTab === 'publicationTypes' && !loading">
+    <!-- === PUBLICATION TYPES TAB === -->
+    <div x-show="activeTab === 'publicationTypes' && !loading" class="flex-1 min-h-0 overflow-y-auto">
 
       <div class="mb-4">
         <input type="search" x-model="pubTypesSearch"
           @input.debounce.400ms="pubTypesPage = 1; loadPubTypes()"
-          placeholder="Search publication types…"
+          placeholder="Search publication types ..."
           class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3" />
       </div>
 
@@ -545,7 +548,7 @@
 
   </main>
 
-  <!-- ── Add / Edit Modal ────────────────────────────────────────────────── -->
+  <!-- Add / Edit Modal -->
   <div x-show="showModal" x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
@@ -592,9 +595,9 @@
             </template>
           </div>
           <!-- Search input -->
-          <input type="text" x-model="kwSearch" @input.debounce.300ms="searchKeywords()"
+          <input type="text" x-model="kwSearch" @input.debounce.300ms="searchKeywordsDropdown()"
             @focus="if(kwSearch.length > 0) kwDropdownOpen = true"
-            placeholder="Search keywords…"
+            placeholder="Search keywords ..."
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           <!-- Dropdown results -->
           <div x-show="kwDropdownOpen && (kwSearchResults.length > 0 || kwSearch.trim().length > 0)"
@@ -630,9 +633,9 @@
             </template>
           </div>
           <!-- Search input -->
-          <input type="text" x-model="authorSearch" @input.debounce.300ms="searchAuthors()"
+          <input type="text" x-model="authorSearch" @input.debounce.300ms="searchAuthorsDropdown()"
             @focus="if(authorSearch.length > 0) authorDropdownOpen = true"
-            placeholder="Search authors…"
+            placeholder="Search authors ..."
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           <!-- Dropdown results -->
           <div x-show="authorDropdownOpen && (authorSearchResults.length > 0 || authorSearch.trim().length > 0)"
@@ -674,7 +677,7 @@
                   class="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100">Cancel</button>
                 <button type="button" @click="createAndSelectAuthor()" :disabled="creatingInlineAuthor"
                   class="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-                  <span x-text="creatingInlineAuthor ? 'Creating…' : 'Create & Add'"></span>
+                  <span x-text="creatingInlineAuthor ? 'Creating ...' : 'Create & Add'"></span>
                 </button>
               </div>
             </div>
@@ -694,9 +697,9 @@
             </template>
           </div>
           <!-- Search input -->
-          <input type="text" x-model="langSearch" @input.debounce.300ms="searchLanguages()"
+          <input type="text" x-model="langSearch" @input.debounce.300ms="searchLanguagesDropdown()"
             @focus="if(langSearch.length > 0) langDropdownOpen = true"
-            placeholder="Search languages…"
+            placeholder="Search languages ..."
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           <!-- Dropdown results -->
           <div x-show="langDropdownOpen && (langSearchResults.length > 0 || langSearch.trim().length > 0)"
@@ -732,9 +735,9 @@
             </template>
           </div>
           <!-- Search input -->
-          <input type="text" x-model="ptSearch" @input.debounce.300ms="searchPubTypes()"
+          <input type="text" x-model="ptSearch" @input.debounce.300ms="searchPubTypesDropdown()"
             @focus="if(ptSearch.length > 0) ptDropdownOpen = true"
-            placeholder="Search publication types…"
+            placeholder="Search publication types ..."
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
           <!-- Dropdown results -->
           <div x-show="ptDropdownOpen && (ptSearchResults.length > 0 || ptSearch.trim().length > 0)"
@@ -776,13 +779,13 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12V4m0 0L8 8m4-4l4 4" />
                 </svg>
-                <span class="truncate" x-text="form.pdfFileName || 'Choose PDF…'"
+                <span class="truncate" x-text="form.pdfFileName || 'Choose PDF ...'"
                       :title="form.pdfFileName || ''"
                       :class="form.pdfFileName ? 'text-gray-700' : 'text-gray-400'"></span>
                 <input type="file" accept=".pdf" class="hidden" @change="uploadPdf($event)" />
               </label>
               <button type="button" x-show="form.pdfFileName" @click="form.pdfFileName = ''"
-                class="text-gray-400 hover:text-red-500 shrink-0" title="Remove PDF">✕</button>
+                class="text-gray-400 hover:text-red-500 shrink-0" title="Remove PDF">&times;</button>
               <a x-show="form.id && form.pdfFileName"
                  :href="'/api/publications/' + form.id + '/download'" target="_blank"
                  class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 shrink-0" title="Download PDF">
@@ -791,7 +794,7 @@
                 </svg>
               </a>
             </div>
-            <p x-show="uploadingPdf" class="text-xs text-indigo-500 mt-1">Uploading…</p>
+            <p x-show="uploadingPdf" class="text-xs text-indigo-500 mt-1">Uploading ...</p>
             <p x-show="uploadError" class="text-xs text-red-500 mt-1" x-text="uploadError"></p>
         </div>
 
@@ -800,14 +803,14 @@
             class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
           <button type="submit" :disabled="saving"
             class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-            <span x-text="saving ? 'Saving…' : (form.id ? 'Update' : 'Create')"></span>
+            <span x-text="saving ? 'Saving ...' : (form.id ? 'Update' : 'Create')"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Delete confirm modal ──────────────────────────────────────────── -->
+  <!-- Delete confirm modal -->
   <div x-show="deleteTarget" x-transition
        class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -819,13 +822,13 @@
         <button @click="deleteTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
         <button @click="doDelete()" :disabled="deleting"
           class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-          <span x-text="deleting ? 'Deleting…' : 'Delete'"></span>
+          <span x-text="deleting ? 'Deleting ...' : 'Delete'"></span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ── Author Add / Edit Modal ──────────────────────────────────────── -->
+  <!-- Author Add / Edit Modal -->
   <div x-show="showAuthorModal" x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
@@ -862,14 +865,14 @@
             class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
           <button type="submit" :disabled="savingAuthor"
             class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-            <span x-text="savingAuthor ? 'Saving…' : (authorForm.id ? 'Update' : 'Create')"></span>
+            <span x-text="savingAuthor ? 'Saving ...' : (authorForm.id ? 'Update' : 'Create')"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Author Delete Confirm Modal ──────────────────────────────────── -->
+  <!-- Author Delete Confirm Modal -->
   <div x-show="deleteAuthorTarget" x-transition
        class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -885,13 +888,13 @@
         <button @click="deleteAuthorTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
         <button @click="doDeleteAuthor()" :disabled="deletingAuthor"
           class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-          <span x-text="deletingAuthor ? 'Deleting…' : 'Delete'"></span>
+          <span x-text="deletingAuthor ? 'Deleting ...' : 'Delete'"></span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ── Keyword Add / Edit Modal ─────────────────────────────────────── -->
+  <!-- Keyword Add / Edit Modal -->
   <div x-show="showKeywordModal" x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
@@ -911,14 +914,14 @@
             class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
           <button type="submit" :disabled="savingKeyword"
             class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-            <span x-text="savingKeyword ? 'Saving…' : (keywordForm.id ? 'Update' : 'Create')"></span>
+            <span x-text="savingKeyword ? 'Saving ...' : (keywordForm.id ? 'Update' : 'Create')"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Keyword Delete Confirm Modal ─────────────────────────────────── -->
+  <!-- Keyword Delete Confirm Modal -->
   <div x-show="deleteKeywordTarget" x-transition
        class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -934,13 +937,13 @@
         <button @click="deleteKeywordTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
         <button @click="doDeleteKeyword()" :disabled="deletingKeyword"
           class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-          <span x-text="deletingKeyword ? 'Deleting…' : 'Delete'"></span>
+          <span x-text="deletingKeyword ? 'Deleting ...' : 'Delete'"></span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ── Language Add / Edit Modal ─────────────────────────────────────── -->
+  <!-- Language Add / Edit Modal -->
   <div x-show="showLanguageModal" x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
@@ -960,14 +963,14 @@
             class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
           <button type="submit" :disabled="savingLanguage"
             class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-            <span x-text="savingLanguage ? 'Saving…' : (languageForm.id ? 'Update' : 'Create')"></span>
+            <span x-text="savingLanguage ? 'Saving ...' : (languageForm.id ? 'Update' : 'Create')"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Language Delete Confirm Modal ─────────────────────────────────── -->
+  <!-- Language Delete Confirm Modal -->
   <div x-show="deleteLanguageTarget" x-transition
        class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -983,13 +986,13 @@
         <button @click="deleteLanguageTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
         <button @click="doDeleteLanguage()" :disabled="deletingLanguage"
           class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-          <span x-text="deletingLanguage ? 'Deleting…' : 'Delete'"></span>
+          <span x-text="deletingLanguage ? 'Deleting ...' : 'Delete'"></span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ── Publication Type Add / Edit Modal ─────────────────────────────── -->
+  <!-- Publication Type Add / Edit Modal -->
   <div x-show="showPubTypeModal" x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        class="fixed inset-0 bg-black/40 z-40 flex items-start justify-center pt-10 px-4 overflow-y-auto"
@@ -1009,14 +1012,14 @@
             class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
           <button type="submit" :disabled="savingPubType"
             class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-            <span x-text="savingPubType ? 'Saving…' : (pubTypeForm.id ? 'Update' : 'Create')"></span>
+            <span x-text="savingPubType ? 'Saving ...' : (pubTypeForm.id ? 'Update' : 'Create')"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Publication Type Delete Confirm Modal ─────────────────────────── -->
+  <!-- Publication Type Delete Confirm Modal -->
   <div x-show="deletePubTypeTarget" x-transition
        class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -1032,1049 +1035,11 @@
         <button @click="deletePubTypeTarget = null" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
         <button @click="doDeletePublicationType()" :disabled="deletingPubType"
           class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-          <span x-text="deletingPubType ? 'Deleting…' : 'Delete'"></span>
+          <span x-text="deletingPubType ? 'Deleting ...' : 'Delete'"></span>
         </button>
       </div>
     </div>
   </div>
 
-  <script>
-    function adminApp() {
-      return {
-        activeTab: 'publications',
-
-        // ── Publications state ──
-        publications: [],
-        total: 0,
-        page: 1,
-        pageSize: 20,
-        loading: false,
-        showModal: false,
-        saving: false,
-        formError: null,
-        deleteTarget: null,
-        deleting: false,
-        toast: null,
-
-        // ── Search & filter state (publications tab) ──
-        query: '',
-        lastQuery: '',
-        isSearchMode: false,
-        filterYearFrom: '',
-        filterYearTo: '',
-        filterSelectedAuthors: [],
-        filterSelectedKeywords: [],
-        filterSelectedLanguages: [],
-        filterSelectedPublicationTypes: [],
-        availableAuthors: [],
-        availableKeywords: [],
-        availableLanguages: [],
-        availablePublicationTypes: [],
-        authorFilterSearch: '',
-        keywordFilterSearch: '',
-        languageFilterSearch: '',
-        publicationTypeFilterSearch: '',
-
-        form: { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
-                abstract: '', body: '', pdfFileName: '', languages: '', publicationTypes: '' },
-        uploadingPdf: false,
-        uploadError: null,
-
-        // ── Searchable dropdown state (publication form modal) ──
-        selectedKeywords: [],
-        kwSearch: '',
-        kwSearchResults: [],
-        kwDropdownOpen: false,
-
-        selectedAuthors: [],
-        authorSearch: '',
-        authorSearchResults: [],
-        authorDropdownOpen: false,
-        showInlineAuthorForm: false,
-        inlineAuthor: { firstName: '', middleName: '', lastName: '', email: '' },
-        inlineAuthorError: null,
-        creatingInlineAuthor: false,
-
-        selectedLanguages: [],
-        langSearch: '',
-        langSearchResults: [],
-        langDropdownOpen: false,
-
-        selectedPubTypes: [],
-        ptSearch: '',
-        ptSearchResults: [],
-        ptDropdownOpen: false,
-
-        // ── Authors state ──
-        authorsList: [],
-        authorsTotal: 0,
-        authorsPage: 1,
-        authorsPageSize: 20,
-        authorsSearch: '',
-        showAuthorModal: false,
-        savingAuthor: false,
-        authorFormError: null,
-        deleteAuthorTarget: null,
-        deletingAuthor: false,
-        authorForm: { id: null, firstName: '', middleName: '', lastName: '', email: '' },
-
-        // ── Keywords state ──
-        keywordsList: [],
-        keywordsTotal: 0,
-        keywordsPage: 1,
-        keywordsPageSize: 20,
-        keywordsSearch: '',
-        showKeywordModal: false,
-        savingKeyword: false,
-        keywordFormError: null,
-        deleteKeywordTarget: null,
-        deletingKeyword: false,
-        keywordForm: { id: null, value: '' },
-
-        // ── Languages state ──
-        languagesList: [],
-        languagesTotal: 0,
-        languagesPage: 1,
-        languagesPageSize: 20,
-        languagesSearch: '',
-        showLanguageModal: false,
-        savingLanguage: false,
-        languageFormError: null,
-        deleteLanguageTarget: null,
-        deletingLanguage: false,
-        languageForm: { id: null, value: '' },
-
-        // ── Publication Types state ──
-        pubTypesList: [],
-        pubTypesTotal: 0,
-        pubTypesPage: 1,
-        pubTypesPageSize: 20,
-        pubTypesSearch: '',
-        showPubTypeModal: false,
-        savingPubType: false,
-        pubTypeFormError: null,
-        deletePubTypeTarget: null,
-        deletingPubType: false,
-        pubTypeForm: { id: null, value: '' },
-
-        get totalPages() { return Math.max(1, Math.ceil(this.total / this.pageSize)); },
-        get authorsTotalPages() { return Math.max(1, Math.ceil(this.authorsTotal / this.authorsPageSize)); },
-        get keywordsTotalPages() { return Math.max(1, Math.ceil(this.keywordsTotal / this.keywordsPageSize)); },
-        get languagesTotalPages() { return Math.max(1, Math.ceil(this.languagesTotal / this.languagesPageSize)); },
-        get pubTypesTotalPages() { return Math.max(1, Math.ceil(this.pubTypesTotal / this.pubTypesPageSize)); },
-
-        get activeFilterCount() {
-          let n = 0;
-          if (this.filterYearFrom) n++;
-          if (this.filterYearTo)   n++;
-          n += this.filterSelectedAuthors.length;
-          n += this.filterSelectedKeywords.length;
-          n += this.filterSelectedLanguages.length;
-          n += this.filterSelectedPublicationTypes.length;
-          return n;
-        },
-
-        get filteredFilterAuthors() {
-          if (!this.authorFilterSearch) return this.availableAuthors;
-          const q = this.authorFilterSearch.toLowerCase();
-          return this.availableAuthors.filter(a => a.name.toLowerCase().includes(q));
-        },
-
-        get filteredFilterKeywords() {
-          if (!this.keywordFilterSearch) return this.availableKeywords;
-          const q = this.keywordFilterSearch.toLowerCase();
-          return this.availableKeywords.filter(k => k.name.toLowerCase().includes(q));
-        },
-
-        get filteredFilterLanguages() {
-          if (!this.languageFilterSearch) return this.availableLanguages;
-          const q = this.languageFilterSearch.toLowerCase();
-          return this.availableLanguages.filter(l => l.name.toLowerCase().includes(q));
-        },
-
-        get filteredFilterPublicationTypes() {
-          if (!this.publicationTypeFilterSearch) return this.availablePublicationTypes;
-          const q = this.publicationTypeFilterSearch.toLowerCase();
-          return this.availablePublicationTypes.filter(pt => pt.name.toLowerCase().includes(q));
-        },
-
-        async init() {
-          await this.loadAll();
-          this.loadFilterOptions();
-        },
-
-        async switchTab(tab) {
-          this.activeTab = tab;
-          this.loading = true;
-          try {
-            if (tab === 'publications') {
-              if (this.isSearchMode) { await this.searchPublications(); }
-              else { await this.loadAll(); }
-            }
-            else if (tab === 'authors') await this.loadAuthors();
-            else if (tab === 'keywords') await this.loadKeywords();
-            else if (tab === 'languages') await this.loadLanguages();
-            else if (tab === 'publicationTypes') await this.loadPubTypes();
-          } finally { this.loading = false; }
-        },
-
-        async loadFilterOptions() {
-          try {
-            const [authorsRes, keywordsRes, languagesRes, pubTypesRes] = await Promise.all([
-              fetch('/api/authors/filter-options'),
-              fetch('/api/keywords/filter-options'),
-              fetch('/api/languages/filter-options'),
-              fetch('/api/publication-types/filter-options')
-            ]);
-            this.availableAuthors  = await authorsRes.json();
-            this.availableKeywords = await keywordsRes.json();
-            this.availableLanguages = await languagesRes.json();
-            this.availablePublicationTypes = await pubTypesRes.json();
-          } catch {}
-        },
-
-        buildFilterParams(params) {
-          if (this.filterYearFrom) params.append('yearFrom', this.filterYearFrom);
-          if (this.filterYearTo)   params.append('yearTo',   this.filterYearTo);
-          this.filterSelectedAuthors.forEach(a  => params.append('authors',  a));
-          this.filterSelectedKeywords.forEach(k => params.append('keywords', k));
-          this.filterSelectedLanguages.forEach(l => params.append('languages', l));
-          this.filterSelectedPublicationTypes.forEach(pt => params.append('publicationTypes', pt));
-        },
-
-        async loadAll() {
-          this.loading = true;
-          this.isSearchMode = false;
-          try {
-            const params = new URLSearchParams({ page: this.page, pageSize: this.pageSize });
-            this.buildFilterParams(params);
-            const res  = await fetch('/api/publications?' + params);
-            const data = await res.json();
-            this.publications = data.items || [];
-            this.total = data.total ?? 0;
-          } catch { this.publications = []; }
-          finally { this.loading = false; }
-        },
-
-        onQueryInput() {
-          this.page = 1;
-          if (!this.query.trim()) {
-            this.loadAll();
-          } else {
-            this.searchPublications();
-          }
-        },
-
-        async searchPublications() {
-          if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
-          this.loading = true;
-          this.isSearchMode = true;
-          this.lastQuery = this.query;
-          try {
-            const params = new URLSearchParams({ q: this.query, page: this.page, pageSize: this.pageSize });
-            this.buildFilterParams(params);
-            const res  = await fetch('/api/search?' + params);
-            const data = await res.json();
-            this.publications = data.items || [];
-            this.total = data.total ?? 0;
-          } catch { this.publications = []; }
-          finally { this.loading = false; }
-        },
-
-        applyFilters() {
-          this.page = 1;
-          if (this.query.trim()) {
-            this.searchPublications();
-          } else {
-            this.loadAll();
-          }
-        },
-
-        async clearFilters() {
-          this.query = '';
-          this.filterYearFrom = '';
-          this.filterYearTo   = '';
-          this.filterSelectedAuthors  = [];
-          this.filterSelectedKeywords = [];
-          this.filterSelectedLanguages = [];
-          this.filterSelectedPublicationTypes = [];
-          this.authorFilterSearch   = '';
-          this.keywordFilterSearch  = '';
-          this.languageFilterSearch = '';
-          this.publicationTypeFilterSearch = '';
-          this.page = 1;
-          await this.loadAll();
-        },
-
-        async changePage(p) {
-          if (p < 1 || p > this.totalPages) return;
-          this.page = p;
-          if (this.isSearchMode) {
-            await this.searchPublications();
-          } else {
-            await this.loadAll();
-          }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        },
-
-        splitKeywords(kw) {
-          if (!kw) return [];
-          return kw.split(',').map(s => s.trim()).filter(Boolean);
-        },
-
-        escapeHtml(text) {
-          const div = document.createElement('div');
-          div.appendChild(document.createTextNode(text));
-          return div.innerHTML;
-        },
-
-        highlight(text) {
-          if (!text) return '';
-          const safe = this.escapeHtml(text);
-          if (!this.isSearchMode || !this.lastQuery.trim()) return safe;
-          const escaped = this.lastQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const re = new RegExp('(' + escaped + ')', 'gi');
-          return safe.replace(re, '<mark class="bg-yellow-200 rounded px-0.5">$1</mark>');
-        },
-
-        openNew() {
-          this.form = { id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
-                        abstract: '', body: '', pdfFileName: '', languages: '', publicationTypes: '' };
-          this.selectedKeywords = [];
-          this.kwSearch = '';
-          this.kwSearchResults = [];
-          this.kwDropdownOpen = false;
-          this.selectedAuthors = [];
-          this.authorSearch = '';
-          this.authorSearchResults = [];
-          this.authorDropdownOpen = false;
-          this.showInlineAuthorForm = false;
-          this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
-          this.inlineAuthorError = null;
-          this.selectedLanguages = [];
-          this.langSearch = '';
-          this.langSearchResults = [];
-          this.langDropdownOpen = false;
-          this.selectedPubTypes = [];
-          this.ptSearch = '';
-          this.ptSearchResults = [];
-          this.ptDropdownOpen = false;
-          this.formError  = null;
-          this.uploadError = null;
-          this.showModal  = true;
-        },
-
-        async openEdit(id) {
-          try {
-            const res = await fetch(`/api/publications/${id}`);
-            if (!res.ok) return;
-            const pub = await res.json();
-            this.form = {
-              id: pub.id,
-              title: pub.title ?? '',
-              year: pub.year ?? null,
-              doi: pub.doi ?? '',
-              keywords: pub.keywords ?? '',
-              authorsText: '',
-              authorObjects: pub.authors || [],
-              abstract: pub.abstract ?? '',
-              body: pub.body ?? '',
-              pdfFileName: pub.pdfFileName ?? '',
-              languages: pub.languages ?? '',
-              publicationTypes: pub.publicationTypes ?? ''
-            };
-            // Populate selected authors from publication data
-            this.selectedAuthors = (pub.authors || []).map(a => ({
-              id: a.id,
-              firstName: a.firstName,
-              middleName: a.middleName,
-              lastName: a.lastName,
-              email: a.email,
-              publicationCount: 0
-            }));
-            this.authorSearch = '';
-            this.authorSearchResults = [];
-            this.authorDropdownOpen = false;
-            this.showInlineAuthorForm = false;
-            this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
-            this.inlineAuthorError = null;
-            // Populate selected keywords from comma-separated string
-            if (pub.keywords) {
-              this.selectedKeywords = pub.keywords.split(',').map((v, i) => ({
-                id: -(i + 1),  // temporary negative ID; will be resolved on save
-                value: v.trim(),
-                publicationCount: 0
-              })).filter(k => k.value.length > 0);
-              // Try to resolve real IDs by searching each
-              for (let i = 0; i < this.selectedKeywords.length; i++) {
-                try {
-                  const sr = await fetch(`/api/keywords/search?q=${encodeURIComponent(this.selectedKeywords[i].value)}&limit=5`);
-                  if (sr.ok) {
-                    const results = await sr.json();
-                    const exact = results.find(r => r.value.toLowerCase() === this.selectedKeywords[i].value.toLowerCase());
-                    if (exact) {
-                      this.selectedKeywords[i].id = exact.id;
-                      this.selectedKeywords[i].publicationCount = exact.publicationCount;
-                    }
-                  }
-                } catch {}
-              }
-            } else {
-              this.selectedKeywords = [];
-            }
-            this.kwSearch = '';
-            this.kwSearchResults = [];
-            this.kwDropdownOpen = false;
-            this.formError  = null;
-            this.uploadError = null;
-            // Populate selected languages from comma-separated string
-            if (pub.languages) {
-              this.selectedLanguages = pub.languages.split(',').map((v, i) => ({
-                id: -(i + 1),
-                value: v.trim(),
-                publicationCount: 0
-              })).filter(l => l.value.length > 0);
-              for (let i = 0; i < this.selectedLanguages.length; i++) {
-                try {
-                  const sr = await fetch(`/api/languages/search?q=${encodeURIComponent(this.selectedLanguages[i].value)}&limit=5`);
-                  if (sr.ok) {
-                    const results = await sr.json();
-                    const exact = results.find(r => r.value.toLowerCase() === this.selectedLanguages[i].value.toLowerCase());
-                    if (exact) {
-                      this.selectedLanguages[i].id = exact.id;
-                      this.selectedLanguages[i].publicationCount = exact.publicationCount;
-                    }
-                  }
-                } catch {}
-              }
-            } else {
-              this.selectedLanguages = [];
-            }
-            this.langSearch = '';
-            this.langSearchResults = [];
-            this.langDropdownOpen = false;
-            // Populate selected publication types from comma-separated string
-            if (pub.publicationTypes) {
-              this.selectedPubTypes = pub.publicationTypes.split(',').map((v, i) => ({
-                id: -(i + 1),
-                value: v.trim(),
-                publicationCount: 0
-              })).filter(pt => pt.value.length > 0);
-              for (let i = 0; i < this.selectedPubTypes.length; i++) {
-                try {
-                  const sr = await fetch(`/api/publication-types/search?q=${encodeURIComponent(this.selectedPubTypes[i].value)}&limit=5`);
-                  if (sr.ok) {
-                    const results = await sr.json();
-                    const exact = results.find(r => r.value.toLowerCase() === this.selectedPubTypes[i].value.toLowerCase());
-                    if (exact) {
-                      this.selectedPubTypes[i].id = exact.id;
-                      this.selectedPubTypes[i].publicationCount = exact.publicationCount;
-                    }
-                  }
-                } catch {}
-              }
-            } else {
-              this.selectedPubTypes = [];
-            }
-            this.ptSearch = '';
-            this.ptSearchResults = [];
-            this.ptDropdownOpen = false;
-            this.showModal  = true;
-          } catch {}
-        },
-
-        async uploadPdf(event) {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          this.uploadingPdf = true;
-          this.uploadError  = null;
-          try {
-            const fd  = new FormData();
-            fd.append('file', file);
-            const res = await fetch('/api/publications/upload', { method: 'POST', body: fd });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              this.uploadError = err?.error || 'Upload failed.';
-              return;
-            }
-            const data = await res.json();
-            this.form.pdfFileName = data.fileName;
-          } catch {
-            this.uploadError = 'Network error during upload.';
-          } finally {
-            this.uploadingPdf = false;
-            event.target.value = ''; // reset input so same file can be re-selected
-          }
-        },
-
-        // ── Keyword search & select helpers ──────────────────────────────
-
-        async searchKeywords() {
-          const q = this.kwSearch.trim();
-          if (q.length === 0) { this.kwSearchResults = []; this.kwDropdownOpen = false; return; }
-          try {
-            const res = await fetch(`/api/keywords/search?q=${encodeURIComponent(q)}&limit=20`);
-            if (res.ok) this.kwSearchResults = await res.json();
-          } catch { this.kwSearchResults = []; }
-          this.kwDropdownOpen = true;
-        },
-
-        selectKeyword(kw) {
-          if (!this.selectedKeywords.some(s => s.id === kw.id)) {
-            this.selectedKeywords.push({ ...kw });
-          }
-          this.kwSearch = '';
-          this.kwSearchResults = [];
-          this.kwDropdownOpen = false;
-        },
-
-        removeKeyword(id) {
-          this.selectedKeywords = this.selectedKeywords.filter(k => k.id !== id);
-        },
-
-        async createAndSelectKeyword() {
-          const value = this.kwSearch.trim();
-          if (!value) return;
-          try {
-            const res = await fetch('/api/keywords', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              this.selectedKeywords.push({ id: data.id, value, publicationCount: 0 });
-              this.kwSearch = '';
-              this.kwSearchResults = [];
-              this.kwDropdownOpen = false;
-            } else if (res.status === 500) {
-              // Keyword might already exist (duplicate); try searching for it
-              const sr = await fetch(`/api/keywords/search?q=${encodeURIComponent(value)}&limit=5`);
-              if (sr.ok) {
-                const results = await sr.json();
-                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
-                if (exact && !this.selectedKeywords.some(s => s.id === exact.id)) {
-                  this.selectedKeywords.push(exact);
-                  this.kwSearch = '';
-                  this.kwSearchResults = [];
-                  this.kwDropdownOpen = false;
-                }
-              }
-            }
-          } catch {}
-        },
-
-        // ── Language search & select helpers ──────────────────────────────
-
-        async searchLanguages() {
-          const q = this.langSearch.trim();
-          if (q.length === 0) { this.langSearchResults = []; this.langDropdownOpen = false; return; }
-          try {
-            const res = await fetch(`/api/languages/search?q=${encodeURIComponent(q)}&limit=20`);
-            if (res.ok) this.langSearchResults = await res.json();
-          } catch { this.langSearchResults = []; }
-          this.langDropdownOpen = true;
-        },
-
-        selectLanguage(lang) {
-          if (!this.selectedLanguages.some(s => s.id === lang.id)) {
-            this.selectedLanguages.push({ ...lang });
-          }
-          this.langSearch = '';
-          this.langSearchResults = [];
-          this.langDropdownOpen = false;
-        },
-
-        removeLanguage(id) {
-          this.selectedLanguages = this.selectedLanguages.filter(l => l.id !== id);
-        },
-
-        async createAndSelectLanguage() {
-          const value = this.langSearch.trim();
-          if (!value) return;
-          try {
-            const res = await fetch('/api/languages', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              this.selectedLanguages.push({ id: data.id, value, publicationCount: 0 });
-              this.langSearch = '';
-              this.langSearchResults = [];
-              this.langDropdownOpen = false;
-            } else if (res.status === 500) {
-              const sr = await fetch(`/api/languages/search?q=${encodeURIComponent(value)}&limit=5`);
-              if (sr.ok) {
-                const results = await sr.json();
-                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
-                if (exact && !this.selectedLanguages.some(s => s.id === exact.id)) {
-                  this.selectedLanguages.push(exact);
-                  this.langSearch = '';
-                  this.langSearchResults = [];
-                  this.langDropdownOpen = false;
-                }
-              }
-            }
-          } catch {}
-        },
-
-        // ── Publication Type search & select helpers ──────────────────────
-
-        async searchPubTypes() {
-          const q = this.ptSearch.trim();
-          if (q.length === 0) { this.ptSearchResults = []; this.ptDropdownOpen = false; return; }
-          try {
-            const res = await fetch(`/api/publication-types/search?q=${encodeURIComponent(q)}&limit=20`);
-            if (res.ok) this.ptSearchResults = await res.json();
-          } catch { this.ptSearchResults = []; }
-          this.ptDropdownOpen = true;
-        },
-
-        selectPubType(pt) {
-          if (!this.selectedPubTypes.some(s => s.id === pt.id)) {
-            this.selectedPubTypes.push({ ...pt });
-          }
-          this.ptSearch = '';
-          this.ptSearchResults = [];
-          this.ptDropdownOpen = false;
-        },
-
-        removePubType(id) {
-          this.selectedPubTypes = this.selectedPubTypes.filter(p => p.id !== id);
-        },
-
-        async createAndSelectPubType() {
-          const value = this.ptSearch.trim();
-          if (!value) return;
-          try {
-            const res = await fetch('/api/publication-types', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              this.selectedPubTypes.push({ id: data.id, value, publicationCount: 0 });
-              this.ptSearch = '';
-              this.ptSearchResults = [];
-              this.ptDropdownOpen = false;
-            } else if (res.status === 500) {
-              const sr = await fetch(`/api/publication-types/search?q=${encodeURIComponent(value)}&limit=5`);
-              if (sr.ok) {
-                const results = await sr.json();
-                const exact = results.find(r => r.value.toLowerCase() === value.toLowerCase());
-                if (exact && !this.selectedPubTypes.some(s => s.id === exact.id)) {
-                  this.selectedPubTypes.push(exact);
-                  this.ptSearch = '';
-                  this.ptSearchResults = [];
-                  this.ptDropdownOpen = false;
-                }
-              }
-            }
-          } catch {}
-        },
-
-        // ── Author search & select helpers ────────────────────────────────
-
-        async searchAuthors() {
-          const q = this.authorSearch.trim();
-          if (q.length === 0) { this.authorSearchResults = []; this.authorDropdownOpen = false; return; }
-          try {
-            const res = await fetch(`/api/authors/search?q=${encodeURIComponent(q)}&limit=20`);
-            if (res.ok) this.authorSearchResults = await res.json();
-          } catch { this.authorSearchResults = []; }
-          this.authorDropdownOpen = true;
-        },
-
-        selectAuthor(a) {
-          if (!this.selectedAuthors.some(s => s.id === a.id)) {
-            this.selectedAuthors.push({ ...a });
-          }
-          this.authorSearch = '';
-          this.authorSearchResults = [];
-          this.authorDropdownOpen = false;
-          this.showInlineAuthorForm = false;
-        },
-
-        removeAuthor(id) {
-          this.selectedAuthors = this.selectedAuthors.filter(a => a.id !== id);
-        },
-
-        async createAndSelectAuthor() {
-          this.inlineAuthorError = null;
-          if (!this.inlineAuthor.firstName?.trim() || !this.inlineAuthor.lastName?.trim()) {
-            this.inlineAuthorError = 'First name and last name are required.';
-            return;
-          }
-          this.creatingInlineAuthor = true;
-          try {
-            const payload = {
-              firstName: this.inlineAuthor.firstName.trim(),
-              middleName: this.inlineAuthor.middleName?.trim() || null,
-              lastName: this.inlineAuthor.lastName.trim(),
-              email: this.inlineAuthor.email?.trim() || null
-            };
-            const res = await fetch('/api/authors', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-              const data = await res.json();
-              this.selectedAuthors.push({
-                id: data.id,
-                firstName: payload.firstName,
-                middleName: payload.middleName,
-                lastName: payload.lastName,
-                email: payload.email,
-                publicationCount: 0
-              });
-              this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
-              this.showInlineAuthorForm = false;
-              this.authorSearch = '';
-              this.authorSearchResults = [];
-              this.authorDropdownOpen = false;
-            } else {
-              const err = await res.json().catch(() => ({}));
-              this.inlineAuthorError = err?.detail || 'Failed to create author.';
-            }
-          } catch {
-            this.inlineAuthorError = 'Network error.';
-          } finally { this.creatingInlineAuthor = false; }
-        },
-
-        async saveForm() {
-          this.formError = null;
-          this.saving = true;
-          const payload = {
-            title:         this.form.title,
-            year:          this.form.year || null,
-            doi:           this.form.doi  || null,
-            keywords:      this.selectedKeywords.map(k => k.value).join(', ') || null,
-            languages:     this.selectedLanguages.map(l => l.value).join(', ') || null,
-            publicationTypes: this.selectedPubTypes.map(pt => pt.value).join(', ') || null,
-            abstract:      this.form.abstract || null,
-            body:          this.form.body || null,
-            pdfFileName:   this.form.pdfFileName || null,
-            authors:       this.selectedAuthors.map(a => ({
-              id: a.id,
-              firstName: a.firstName,
-              middleName: a.middleName || null,
-              lastName: a.lastName,
-              email: a.email || null
-            }))
-          };
-          try {
-            const url    = this.form.id ? `/api/publications/${this.form.id}` : '/api/publications';
-            const method = this.form.id ? 'PUT' : 'POST';
-            const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) { const err = await res.json().catch(() => ({})); this.formError = err?.detail || 'Save failed.'; return; }
-            this.showToast(this.form.id ? 'Publication updated.' : 'Publication created.');
-            this.closeModal();
-            if (this.isSearchMode) { await this.searchPublications(); } else { await this.loadAll(); }
-          } catch {
-            this.formError = 'Network error — please try again.';
-          } finally { this.saving = false; }
-        },
-
-        closeModal() { this.showModal = false; this.uploadError = null; },
-
-        confirmDelete(pub) { this.deleteTarget = pub; },
-
-        async doDelete() {
-          if (!this.deleteTarget) return;
-          this.deleting = true;
-          try {
-            await fetch(`/api/publications/${this.deleteTarget.id}`, { method: 'DELETE' });
-            this.showToast('Publication deleted.');
-            this.deleteTarget = null;
-            if (this.isSearchMode) { await this.searchPublications(); } else { await this.loadAll(); }
-          } catch {} finally { this.deleting = false; }
-        },
-
-        showToast(msg) {
-          this.toast = msg;
-          setTimeout(() => { this.toast = null; }, 3000);
-        },
-
-        // ── Authors CRUD ──────────────────────────────────────────────────
-
-        async loadAuthors() {
-          try {
-            let url = `/api/authors?page=${this.authorsPage}&pageSize=${this.authorsPageSize}`;
-            if (this.authorsSearch) url += `&q=${encodeURIComponent(this.authorsSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            this.authorsList = data.items || [];
-            this.authorsTotal = data.total ?? 0;
-          } catch { this.authorsList = []; }
-        },
-
-        async changeAuthorsPage(p) {
-          if (p < 1 || p > this.authorsTotalPages) return;
-          this.authorsPage = p;
-          this.loading = true;
-          try { await this.loadAuthors(); } finally { this.loading = false; }
-        },
-
-        openNewAuthor() {
-          this.authorForm = { id: null, firstName: '', middleName: '', lastName: '', email: '' };
-          this.authorFormError = null;
-          this.showAuthorModal = true;
-        },
-
-        openEditAuthor(author) {
-          this.authorForm = {
-            id: author.id,
-            firstName: author.firstName ?? '',
-            middleName: author.middleName ?? '',
-            lastName: author.lastName ?? '',
-            email: author.email ?? ''
-          };
-          this.authorFormError = null;
-          this.showAuthorModal = true;
-        },
-
-        async saveAuthor() {
-          this.authorFormError = null;
-          this.savingAuthor = true;
-          const payload = {
-            firstName: this.authorForm.firstName || '',
-            middleName: this.authorForm.middleName || null,
-            lastName: this.authorForm.lastName || '',
-            email: this.authorForm.email || null
-          };
-          try {
-            const url = this.authorForm.id ? `/api/authors/${this.authorForm.id}` : '/api/authors';
-            const method = this.authorForm.id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) { const err = await res.json().catch(() => ({})); this.authorFormError = err?.detail || 'Save failed.'; return; }
-            this.showToast(this.authorForm.id ? 'Author updated.' : 'Author created.');
-            this.showAuthorModal = false;
-            this.loading = true;
-            await this.loadAuthors();
-            this.loading = false;
-          } catch {
-            this.authorFormError = 'Network error — please try again.';
-          } finally { this.savingAuthor = false; }
-        },
-
-        confirmDeleteAuthor(author) { this.deleteAuthorTarget = author; },
-
-        async doDeleteAuthor() {
-          if (!this.deleteAuthorTarget) return;
-          this.deletingAuthor = true;
-          try {
-            await fetch(`/api/authors/${this.deleteAuthorTarget.id}`, { method: 'DELETE' });
-            this.showToast('Author deleted.');
-            this.deleteAuthorTarget = null;
-            this.loading = true;
-            await this.loadAuthors();
-            this.loading = false;
-          } catch {} finally { this.deletingAuthor = false; }
-        },
-
-        // ── Keywords CRUD ─────────────────────────────────────────────────
-
-        async loadKeywords() {
-          try {
-            let url = `/api/keywords?page=${this.keywordsPage}&pageSize=${this.keywordsPageSize}`;
-            if (this.keywordsSearch) url += `&q=${encodeURIComponent(this.keywordsSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            this.keywordsList = data.items || [];
-            this.keywordsTotal = data.total ?? 0;
-          } catch { this.keywordsList = []; }
-        },
-
-        async changeKeywordsPage(p) {
-          if (p < 1 || p > this.keywordsTotalPages) return;
-          this.keywordsPage = p;
-          this.loading = true;
-          try { await this.loadKeywords(); } finally { this.loading = false; }
-        },
-
-        openNewKeyword() {
-          this.keywordForm = { id: null, value: '' };
-          this.keywordFormError = null;
-          this.showKeywordModal = true;
-        },
-
-        openEditKeyword(kw) {
-          this.keywordForm = { id: kw.id, value: kw.value ?? '' };
-          this.keywordFormError = null;
-          this.showKeywordModal = true;
-        },
-
-        async saveKeyword() {
-          this.keywordFormError = null;
-          this.savingKeyword = true;
-          const payload = { value: this.keywordForm.value };
-          try {
-            const url = this.keywordForm.id ? `/api/keywords/${this.keywordForm.id}` : '/api/keywords';
-            const method = this.keywordForm.id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) { const err = await res.json().catch(() => ({})); this.keywordFormError = err?.detail || 'Save failed.'; return; }
-            this.showToast(this.keywordForm.id ? 'Keyword updated.' : 'Keyword created.');
-            this.showKeywordModal = false;
-            this.loading = true;
-            await this.loadKeywords();
-            this.loading = false;
-          } catch {
-            this.keywordFormError = 'Network error — please try again.';
-          } finally { this.savingKeyword = false; }
-        },
-
-        confirmDeleteKeyword(kw) { this.deleteKeywordTarget = kw; },
-
-        async doDeleteKeyword() {
-          if (!this.deleteKeywordTarget) return;
-          this.deletingKeyword = true;
-          try {
-            await fetch(`/api/keywords/${this.deleteKeywordTarget.id}`, { method: 'DELETE' });
-            this.showToast('Keyword deleted.');
-            this.deleteKeywordTarget = null;
-            this.loading = true;
-            await this.loadKeywords();
-            this.loading = false;
-          } catch {} finally { this.deletingKeyword = false; }
-        },
-
-        // ── Languages CRUD ────────────────────────────────────────────────
-
-        async loadLanguages() {
-          try {
-            let url = `/api/languages?page=${this.languagesPage}&pageSize=${this.languagesPageSize}`;
-            if (this.languagesSearch) url += `&q=${encodeURIComponent(this.languagesSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            this.languagesList = data.items || [];
-            this.languagesTotal = data.total ?? 0;
-          } catch { this.languagesList = []; }
-        },
-
-        async changeLanguagesPage(p) {
-          if (p < 1 || p > this.languagesTotalPages) return;
-          this.languagesPage = p;
-          this.loading = true;
-          try { await this.loadLanguages(); } finally { this.loading = false; }
-        },
-
-        openNewLanguage() {
-          this.languageForm = { id: null, value: '' };
-          this.languageFormError = null;
-          this.showLanguageModal = true;
-        },
-
-        openEditLanguage(lang) {
-          this.languageForm = { id: lang.id, value: lang.value ?? '' };
-          this.languageFormError = null;
-          this.showLanguageModal = true;
-        },
-
-        async saveLanguage() {
-          this.languageFormError = null;
-          this.savingLanguage = true;
-          const payload = { value: this.languageForm.value };
-          try {
-            const url = this.languageForm.id ? `/api/languages/${this.languageForm.id}` : '/api/languages';
-            const method = this.languageForm.id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) { const err = await res.json().catch(() => ({})); this.languageFormError = err?.detail || 'Save failed.'; return; }
-            this.showToast(this.languageForm.id ? 'Language updated.' : 'Language created.');
-            this.showLanguageModal = false;
-            this.loading = true;
-            await this.loadLanguages();
-            this.loading = false;
-          } catch {
-            this.languageFormError = 'Network error — please try again.';
-          } finally { this.savingLanguage = false; }
-        },
-
-        confirmDeleteLanguage(lang) { this.deleteLanguageTarget = lang; },
-
-        async doDeleteLanguage() {
-          if (!this.deleteLanguageTarget) return;
-          this.deletingLanguage = true;
-          try {
-            await fetch(`/api/languages/${this.deleteLanguageTarget.id}`, { method: 'DELETE' });
-            this.showToast('Language deleted.');
-            this.deleteLanguageTarget = null;
-            this.loading = true;
-            await this.loadLanguages();
-            this.loading = false;
-          } catch {} finally { this.deletingLanguage = false; }
-        },
-
-        // ── Publication Types CRUD ────────────────────────────────────────
-
-        async loadPubTypes() {
-          try {
-            let url = `/api/publication-types?page=${this.pubTypesPage}&pageSize=${this.pubTypesPageSize}`;
-            if (this.pubTypesSearch) url += `&q=${encodeURIComponent(this.pubTypesSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            this.pubTypesList = data.items || [];
-            this.pubTypesTotal = data.total ?? 0;
-          } catch { this.pubTypesList = []; }
-        },
-
-        async changePubTypesPage(p) {
-          if (p < 1 || p > this.pubTypesTotalPages) return;
-          this.pubTypesPage = p;
-          this.loading = true;
-          try { await this.loadPubTypes(); } finally { this.loading = false; }
-        },
-
-        openNewPublicationType() {
-          this.pubTypeForm = { id: null, value: '' };
-          this.pubTypeFormError = null;
-          this.showPubTypeModal = true;
-        },
-
-        openEditPublicationType(pt) {
-          this.pubTypeForm = { id: pt.id, value: pt.value ?? '' };
-          this.pubTypeFormError = null;
-          this.showPubTypeModal = true;
-        },
-
-        async savePublicationType() {
-          this.pubTypeFormError = null;
-          this.savingPubType = true;
-          const payload = { value: this.pubTypeForm.value };
-          try {
-            const url = this.pubTypeForm.id ? `/api/publication-types/${this.pubTypeForm.id}` : '/api/publication-types';
-            const method = this.pubTypeForm.id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) { const err = await res.json().catch(() => ({})); this.pubTypeFormError = err?.detail || 'Save failed.'; return; }
-            this.showToast(this.pubTypeForm.id ? 'Publication type updated.' : 'Publication type created.');
-            this.showPubTypeModal = false;
-            this.loading = true;
-            await this.loadPubTypes();
-            this.loading = false;
-          } catch {
-            this.pubTypeFormError = 'Network error — please try again.';
-          } finally { this.savingPubType = false; }
-        },
-
-        confirmDeletePublicationType(pt) { this.deletePubTypeTarget = pt; },
-
-        async doDeletePublicationType() {
-          if (!this.deletePubTypeTarget) return;
-          this.deletingPubType = true;
-          try {
-            await fetch(`/api/publication-types/${this.deletePubTypeTarget.id}`, { method: 'DELETE' });
-            this.showToast('Publication type deleted.');
-            this.deletePubTypeTarget = null;
-            this.loading = true;
-            await this.loadPubTypes();
-            this.loading = false;
-          } catch {} finally { this.deletingPubType = false; }
-        }
-      };
-    }
-  </script>
 </body>
 </html>

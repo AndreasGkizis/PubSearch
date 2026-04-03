@@ -218,13 +218,13 @@ The API starts on `http://localhost:5000` (or `https://localhost:5001`).
 
 ```
 ResearchPublications/
-├── Domain/               ← Entities, value objects, interfaces (no dependencies)
-├── Application/          ← DTOs, PublicationService, ISearchService interface
-├── Infrastructure/       ← Dapper + SP repos, MssqlSearchService, LocalFileService
-└── API/                  ← ASP.NET Core controllers, middleware, static frontend
+├── Domain/               ←  Entities, value objects, interfaces (no dependencies)
+├── Application/          ←  DTOs, PublicationService, ISearchService interface
+├── Infrastructure/       ←  Dapper + SP repos, MssqlSearchService, LocalFileService
+└── API/                  ←  ASP.NET Core controllers, middleware, static frontend
 ```
 
-**Dependency direction:** API → Infrastructure → Application → Domain
+**Dependency direction:** API→ Infrastructure→ Application→ Domain
 
 ---
 
