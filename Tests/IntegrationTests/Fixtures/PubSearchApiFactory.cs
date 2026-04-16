@@ -29,6 +29,9 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
         .WithPassword(DbPassword)
         .Build();
 
+    /// <summary>The temporary PDF storage directory used by this test server instance.</summary>
+    public string PdfStoragePath { get; } = Path.Combine(Path.GetTempPath(), $"pubsearch-tests-{Guid.NewGuid():N}");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureAppConfiguration((_, config) =>
@@ -40,7 +43,7 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
                 ["SqlSettings:DbName"]   = "master",
                 ["SqlSettings:UserId"]   = "sa",
                 ["SqlSettings:Password"] = DbPassword,
-                ["PdfStorage:Path"]      = Path.Combine(Path.GetTempPath(), $"pubsearch-tests-{Guid.NewGuid():N}"),
+                ["PdfStorage:Path"]      = PdfStoragePath,
             });
         });
 

@@ -8,7 +8,11 @@ using PublicationType = ResearchPublications.Domain.Entities.PublicationType;
 
 namespace ResearchPublications.Application.Services;
 
-public class PublicationService(IPublicationRepository repository, CacheService cacheService, ITypesenseIndexingService indexingService)
+public class PublicationService(
+    IPublicationRepository repository,
+    CacheService cacheService,
+    ITypesenseIndexingService indexingService,
+    IFileService fileService)
 {
     public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(
         int page, int pageSize, SearchFilters? filters = null)
@@ -46,11 +50,22 @@ public class PublicationService(IPublicationRepository repository, CacheService 
 
     public async Task UpdateAsync(int id, PublicationDetailDto dto)
     {
-        _ = await repository.GetByIdAsync(id)
+        var existing = await repository.GetByIdAsync(id)
             ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
+
+        var oldPdfFileName = existing.PdfFileName;
+
         var entity = FromDetail(dto);
         entity.Id = id;
         await repository.UpdateAsync(entity);
+
+        // Delete the old PDF file if it has been replaced
+        if (!string.IsNullOrWhiteSpace(oldPdfFileName) &&
+            !string.Equals(oldPdfFileName, dto.PdfFileName, StringComparison.OrdinalIgnoreCase))
+        {
+            await fileService.DeletePdfAsync(oldPdfFileName);
+        }
+
         await cacheService.RefreshAuthorFilterOptionsAsync();
         await cacheService.RefreshKeywordFilterOptionsAsync();
         await cacheService.RefreshLanguageFilterOptionsAsync();
@@ -63,9 +78,16 @@ public class PublicationService(IPublicationRepository repository, CacheService 
 
     public async Task DeleteAsync(int id)
     {
-        _ = await repository.GetByIdAsync(id)
+        var existing = await repository.GetByIdAsync(id)
             ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
+
+        var pdfFileName = existing.PdfFileName;
+
         await repository.DeleteAsync(id);
+
+        if (!string.IsNullOrWhiteSpace(pdfFileName))
+            await fileService.DeletePdfAsync(pdfFileName);
+
         await cacheService.RefreshAuthorFilterOptionsAsync();
         await cacheService.RefreshKeywordFilterOptionsAsync();
         await cacheService.RefreshLanguageFilterOptionsAsync();

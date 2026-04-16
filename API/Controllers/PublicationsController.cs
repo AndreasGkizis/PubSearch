@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ResearchPublications.Application.DTOs;
+using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Application.Services;
 using ResearchPublications.Domain.Interfaces;
 
@@ -7,7 +8,10 @@ namespace ResearchPublications.API.Controllers;
 
 [ApiController]
 [Route("api/publications")]
-public class PublicationsController(PublicationService publicationService, IFileService fileService)
+public class PublicationsController(
+    PublicationService publicationService,
+    IFileService fileService,
+    IPdfTextExtractor pdfTextExtractor)
     : ControllerBase
 {
     // GET /api/publications?page=1&pageSize=20
@@ -85,7 +89,8 @@ public class PublicationsController(PublicationService publicationService, IFile
     }
 
     // POST /api/publications/upload
-    // Upload a PDF file; returns { fileName } which can be used in create/update payloads.
+    // Saves the PDF, extracts its text, and returns { fileName, extractedText }.
+    // The caller should confirm by using the returned fileName, or discard it via DELETE /api/publications/files/{fileName}.
     [HttpPost("upload")]
     [RequestSizeLimit(52_428_800)] // 50 MB
     public async Task<IActionResult> Upload(IFormFile file)
@@ -97,7 +102,29 @@ public class PublicationsController(PublicationService publicationService, IFile
             return BadRequest(new { error = "Only PDF files are accepted." });
 
         await using var stream = file.OpenReadStream();
-        var savedName = await fileService.SavePdfAsync(stream, file.FileName);
-        return Ok(new { fileName = savedName });
+
+        // Extract text before saving so we can rewind; PdfPig reads from the stream position.
+        using var memStream = new MemoryStream();
+        await stream.CopyToAsync(memStream);
+
+        memStream.Position = 0;
+        var extractedText = pdfTextExtractor.Extract(memStream);
+
+        memStream.Position = 0;
+        var savedName = await fileService.SavePdfAsync(memStream, file.FileName);
+
+        return Ok(new { fileName = savedName, extractedText });
+    }
+
+    // DELETE /api/publications/files/{fileName}
+    // Discards a previously uploaded PDF that was not confirmed.
+    [HttpDelete("files/{fileName}")]
+    public async Task<IActionResult> DeleteFile(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return BadRequest(new { error = "File name must not be empty." });
+
+        await fileService.DeletePdfAsync(fileName);
+        return NoContent();
     }
 }

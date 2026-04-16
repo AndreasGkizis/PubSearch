@@ -1040,6 +1040,31 @@
       </div>
     </div>
   </div>
+  <!-- ── PDF Preview Modal ──────────────────────────────────────────────── -->
+  <div x-show="pdfPreview.show" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-800">Extracted PDF Text</h2>
+        <button @click="discardPdfPreview()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+      </div>
+
+      <div class="px-6 py-4 flex-1 overflow-auto">
+        <p class="text-sm text-gray-500 mb-3">
+          Review the text extracted from the PDF. Pressing <strong>OK</strong> will attach this file and populate the <em>Body</em> field (only if it is currently empty).
+        </p>
+        <textarea x-model="pdfPreview.extractedText" rows="16"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-y"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <button type="button" @click="discardPdfPreview()"
+          class="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button type="button" @click="confirmPdfPreview()"
+          class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">OK — Use This File</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

@@ -100,6 +100,8 @@ function adminApp() {
     },
     uploadingPdf: false,
     uploadError: null,
+    pdfPreview: { show: false, fileName: '', extractedText: '' },
+    _pendingPdfFileName: '', // tracks a confirmed-but-not-yet-saved upload for cleanup on cancel
 
     // ── Searchable dropdown state (publication form modal) ──
     selectedKeywords: [],
@@ -298,6 +300,7 @@ function adminApp() {
       this._resetFormDropdowns();
       this.formError  = null;
       this.uploadError = null;
+      this._pendingPdfFileName = '';
       this.showModal  = true;
     },
 
@@ -345,6 +348,7 @@ function adminApp() {
 
         this.formError  = null;
         this.uploadError = null;
+        this._pendingPdfFileName = '';
         this.showModal  = true;
       } catch {}
     },
@@ -383,13 +387,29 @@ function adminApp() {
           return;
         }
         const data = await res.json();
-        this.form.pdfFileName = data.fileName;
+        // Show preview modal — user must confirm before the file is committed to the form
+        this.pdfPreview = { show: true, fileName: data.fileName, extractedText: data.extractedText || '' };
       } catch {
         this.uploadError = 'Network error during upload.';
       } finally {
         this.uploadingPdf = false;
         event.target.value = '';
       }
+    },
+
+    confirmPdfPreview() {
+      this.form.pdfFileName = this.pdfPreview.fileName;
+      this._pendingPdfFileName = this.pdfPreview.fileName;
+      if (this.pdfPreview.extractedText && !this.form.body)
+        this.form.body = this.pdfPreview.extractedText;
+      this.pdfPreview = { show: false, fileName: '', extractedText: '' };
+    },
+
+    async discardPdfPreview() {
+      try {
+        await fetch(`/api/publications/files/${encodeURIComponent(this.pdfPreview.fileName)}`, { method: 'DELETE' });
+      } catch { /* best-effort cleanup */ }
+      this.pdfPreview = { show: false, fileName: '', extractedText: '' };
     },
 
     // ── Searchable dropdown helpers (Keywords) ──────────────────
@@ -564,6 +584,7 @@ function adminApp() {
         const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) { const err = await res.json().catch(() => ({})); this.formError = err?.detail || 'Save failed.'; return; }
         this.showToast(this.form.id ? 'Publication updated.' : 'Publication created.');
+        this._pendingPdfFileName = '';
         this.closeModal();
         if (this.isSearchMode) { await this.searchPublications(); } else { await this.loadAll(); }
       } catch {
@@ -571,7 +592,16 @@ function adminApp() {
       } finally { this.saving = false; }
     },
 
-    closeModal() { this.showModal = false; this.uploadError = null; },
+    closeModal() {
+      // Discard any PDF that was uploaded+confirmed but the publication was never saved
+      if (this.pdfPreview.show) this.discardPdfPreview();
+      if (this._pendingPdfFileName) {
+        fetch(`/api/publications/files/${encodeURIComponent(this._pendingPdfFileName)}`, { method: 'DELETE' }).catch(() => {});
+        this._pendingPdfFileName = '';
+      }
+      this.showModal = false;
+      this.uploadError = null;
+    },
     confirmDelete(pub) { this.deleteTarget = pub; },
 
     async doDelete() {

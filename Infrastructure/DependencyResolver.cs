@@ -48,6 +48,7 @@ public static class DependencyResolver
         services.AddKeyedScoped<ISearchService, MssqlSearchService>("mssql");
         services.AddScoped<ITypesenseIndexingService, TypesenseIndexingService>();
         services.AddScoped<IFileService, LocalFileService>();
+        services.AddTransient<IPdfTextExtractor, PdfPigTextExtractor>();
         services.AddTransient<DbSeeder>();
 
         return services;

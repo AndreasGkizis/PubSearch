@@ -51,6 +51,14 @@ public class LocalFileService : IFileService
         return uniqueName;
     }
 
+    public Task DeletePdfAsync(string fileName)
+    {
+        var fullPath = Resolve(fileName);
+        if (File.Exists(fullPath))
+            File.Delete(fullPath);
+        return Task.CompletedTask;
+    }
+
     // ── Private ────────────────────────────────────────────────────────────
 
     private string Resolve(string fileName)
