@@ -79,6 +79,8 @@ function adminApp() {
     query: '',
     lastQuery: '',
     isSearchMode: false,
+    searchProvider: localStorage.getItem('searchProvider') || 'typesense',
+    fuzzyFilters: localStorage.getItem('fuzzyFilters') === 'true',
     filterYearFrom: '',
     filterYearTo: '',
     filterSelectedAuthors: [],
