@@ -66,14 +66,16 @@ public abstract class IntegrationTestBase
     {
         var response = await Client.GetAsync("/api/authors/filter-options");
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<List<string>>())!;
+        var options = await response.Content.ReadFromJsonAsync<List<FilterOptionResponse>>();
+        return (options ?? []).Select(o => o.Name).ToList();
     }
 
     protected async Task<List<string>> GetAllKeywordValuesAsync()
     {
         var response = await Client.GetAsync("/api/keywords/filter-options");
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<List<string>>())!;
+        var options = await response.Content.ReadFromJsonAsync<List<FilterOptionResponse>>();
+        return (options ?? []).Select(o => o.Name).ToList();
     }
 
     // ── Author management ──────────────────────────────────────────────────
@@ -164,4 +166,8 @@ public abstract class IntegrationTestBase
         int Total,
         int Page,
         int PageSize);
+
+    protected record FilterOptionResponse(
+        string Name,
+        int Count);
 }
