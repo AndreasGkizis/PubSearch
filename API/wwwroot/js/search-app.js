@@ -149,6 +149,12 @@ function searchApp() {
       }
     },
 
+    refreshSearchProvider() {
+      if (this.isSearchMode) {
+        this.search();
+      }
+    },
+
     async search() {
       if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
       this.loading = true;

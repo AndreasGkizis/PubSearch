@@ -229,13 +229,24 @@ function adminApp() {
       if (!this.query.trim()) { this.loadAll(); } else { this.searchPublications(); }
     },
 
+    refreshSearchProvider() {
+      if (this.activeTab === 'publications' && this.isSearchMode) {
+        this.searchPublications();
+      }
+    },
+
     async searchPublications() {
       if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
       this.loading = true;
       this.isSearchMode = true;
       this.lastQuery = this.query;
       try {
-        const params = new URLSearchParams({ q: this.query, page: this.page, pageSize: this.pageSize });
+        const params = new URLSearchParams({
+          q: this.query,
+          page: this.page,
+          pageSize: this.pageSize,
+          provider: this.searchProvider,
+        });
         buildFilterParams(params, this._getFilters());
         const res  = await fetch('/api/search?' + params);
         const data = await res.json();
