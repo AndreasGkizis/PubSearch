@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Infrastructure.Persistence;
 using Testcontainers.MsSql;
 using Xunit;
@@ -63,6 +64,13 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
                 opts.UseSqlServer(connectionString,
                     x => x.MigrationsAssembly("ResearchPublications.Infrastructure")
                            .MigrationsHistoryTable("__EFMigrationsHistory")));
+
+            var indexingDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(ITypesenseIndexingService));
+            if (indexingDescriptor != null)
+                services.Remove(indexingDescriptor);
+
+            services.AddScoped<ITypesenseIndexingService, NoOpTypesenseIndexingService>();
         });
 
         builder.UseEnvironment("Development");
@@ -71,4 +79,12 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
     public async Task InitializeAsync() => await _dbContainer.StartAsync();
 
     async Task IAsyncLifetime.DisposeAsync() => await _dbContainer.DisposeAsync();
+
+    private sealed class NoOpTypesenseIndexingService : ITypesenseIndexingService
+    {
+        public Task EnsureCollectionExistsAsync() => Task.CompletedTask;
+        public Task IndexAllPublicationsAsync() => Task.CompletedTask;
+        public Task IndexPublicationAsync(ResearchPublications.Domain.Entities.Publication publication) => Task.CompletedTask;
+        public Task RemovePublicationAsync(int id) => Task.CompletedTask;
+    }
 }

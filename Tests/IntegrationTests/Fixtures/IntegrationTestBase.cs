@@ -23,8 +23,11 @@ public abstract class IntegrationTestBase
         string? title = null,
         int? year = 2024,
         string? keywords = null,
+        string? languages = null,
+        string? publicationTypes = null,
         string? @abstract = null,
         string? doi = null,
+        string? pdfFileName = null,
         List<AuthorDto>? authors = null)
     {
         var payload = new PublicationDetailDto
@@ -32,8 +35,11 @@ public abstract class IntegrationTestBase
             Title         = title ?? $"Test-{Guid.NewGuid():N}",
             Year          = year,
             Keywords      = keywords,
+            Languages     = languages,
+            PublicationTypes = publicationTypes,
             Abstract      = @abstract,
             DOI           = doi,
+            PdfFileName   = pdfFileName,
             Authors       = authors ?? [new AuthorDto { FirstName = "Default", LastName = "Author" }]
         };
 
@@ -145,6 +151,66 @@ public abstract class IntegrationTestBase
         return (await response.Content.ReadFromJsonAsync<KeywordListResponse>())!;
     }
 
+    // ── Language management ────────────────────────────────────────────────
+
+    protected async Task<int> CreateLanguageAsync(string? value = null)
+    {
+        var payload = new LanguageManagementDto
+        {
+            Value = value ?? $"Language-{Guid.NewGuid():N}"
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/languages", payload);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<CreateResponse>();
+        return result!.Id;
+    }
+
+    protected async Task<LanguageManagementDto> GetLanguageAsync(int id)
+    {
+        var response = await Client.GetAsync($"/api/languages/{id}");
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LanguageManagementDto>())!;
+    }
+
+    protected async Task<LanguageListResponse> ListLanguagesAsync(int page = 1, int pageSize = 100)
+    {
+        var response = await Client.GetAsync($"/api/languages?page={page}&pageSize={pageSize}");
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LanguageListResponse>())!;
+    }
+
+    // ── Publication type management ────────────────────────────────────────
+
+    protected async Task<int> CreatePublicationTypeAsync(string? value = null)
+    {
+        var payload = new PublicationTypeManagementDto
+        {
+            Value = value ?? $"PublicationType-{Guid.NewGuid():N}"
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/publication-types", payload);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<CreateResponse>();
+        return result!.Id;
+    }
+
+    protected async Task<PublicationTypeManagementDto> GetPublicationTypeAsync(int id)
+    {
+        var response = await Client.GetAsync($"/api/publication-types/{id}");
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PublicationTypeManagementDto>())!;
+    }
+
+    protected async Task<PublicationTypeListResponse> ListPublicationTypesAsync(int page = 1, int pageSize = 100)
+    {
+        var response = await Client.GetAsync($"/api/publication-types?page={page}&pageSize={pageSize}");
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PublicationTypeListResponse>())!;
+    }
+
     // ── Response DTOs ──────────────────────────────────────────────────────
 
     protected record CreateResponse(int Id);
@@ -163,6 +229,18 @@ public abstract class IntegrationTestBase
 
     protected record KeywordListResponse(
         List<KeywordManagementDto> Items,
+        int Total,
+        int Page,
+        int PageSize);
+
+    protected record LanguageListResponse(
+        List<LanguageManagementDto> Items,
+        int Total,
+        int Page,
+        int PageSize);
+
+    protected record PublicationTypeListResponse(
+        List<PublicationTypeManagementDto> Items,
         int Total,
         int Page,
         int PageSize);
