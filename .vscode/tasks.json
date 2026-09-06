@@ -2,20 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "podman-socket",
+      "label": "docker-up",
       "type": "process",
-      "command": "systemctl",
-      "args": [
-        "--user",
-        "restart",
-        "podman.socket"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "podman-up",
-      "type": "process",
-      "command": "podman",
+      "command": "docker",
       "args": [
         "compose",
         "up",
@@ -24,8 +13,7 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": [],
-      "dependsOn": "podman-socket"
+      "problemMatcher": []
     },
     {
       "label": "build",
@@ -38,7 +26,7 @@
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
       "problemMatcher": "$msCompile",
-      "dependsOn": "podman-up"
+      "dependsOn": "docker-up"
     },
     {
       "label": "test",
@@ -51,15 +39,9 @@
         "--maxcpucount:1"
       ],
       "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "DOCKER_HOST": "unix://${env:XDG_RUNTIME_DIR}/podman/podman.sock",
-          "DOCKER_API_VERSION": "1.40",
-          "TESTCONTAINERS_RYUK_DISABLED": "true"
-        }
+        "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": "$msCompile",
-      "dependsOn": "podman-socket"
+      "problemMatcher": "$msCompile"
     }
   ]
 }
