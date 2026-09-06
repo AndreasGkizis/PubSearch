@@ -2,13 +2,30 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "docker-up",
-      "type": "shell",
-      "command": "docker compose up -d",
+      "label": "podman-socket",
+      "type": "process",
+      "command": "systemctl",
+      "args": [
+        "--user",
+        "restart",
+        "podman.socket"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "podman-up",
+      "type": "process",
+      "command": "podman",
+      "args": [
+        "compose",
+        "up",
+        "-d"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "dependsOn": "podman-socket"
     },
     {
       "label": "build",
@@ -21,7 +38,28 @@
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
       "problemMatcher": "$msCompile",
-      "dependsOn": "docker-up"
+      "dependsOn": "podman-up"
+    },
+    {
+      "label": "test",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "${workspaceFolder}/Tests/IntegrationTests/ResearchPublications.IntegrationTests.csproj",
+        "--disable-build-servers",
+        "--maxcpucount:1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "DOCKER_HOST": "unix://${env:XDG_RUNTIME_DIR}/podman/podman.sock",
+          "DOCKER_API_VERSION": "1.40",
+          "TESTCONTAINERS_RYUK_DISABLED": "true"
+        }
+      },
+      "problemMatcher": "$msCompile",
+      "dependsOn": "podman-socket"
     }
   ]
 }

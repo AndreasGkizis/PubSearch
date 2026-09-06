@@ -22,62 +22,16 @@
 <body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
 
   <header class="bg-white shadow-sm sticky top-0 z-10">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
       <div class="flex items-center gap-3 shrink-0">
         <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl p-0.5 text-xs font-medium shrink-0">
           <a href="index.html" class="px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors">Search</a>
           <a href="admin.html" aria-current="page" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm transition-colors">Admin</a>
         </div>
-        <h1 class="text-xl font-bold text-indigo-700">Admin</h1>
-      </div>
-
-      <div class="flex-1 min-w-0 flex items-center gap-3">
-        <nav class="flex gap-1 shrink-0">
-          <button @click="switchTab('publications')"
-            :class="activeTab === 'publications' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Publications</button>
-          <button @click="switchTab('authors')"
-            :class="activeTab === 'authors' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Authors</button>
-          <button @click="switchTab('keywords')"
-            :class="activeTab === 'keywords' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Keywords</button>
-          <button @click="switchTab('languages')"
-            :class="activeTab === 'languages' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Languages</button>
-          <button @click="switchTab('publicationTypes')"
-            :class="activeTab === 'publicationTypes' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Publication Types</button>
-        </nav>
-
-        <input x-show="activeTab === 'publications'"
-          type="search" x-model="query"
-          @keyup.enter="searchPublications()"
-          @input.debounce.400ms="onQueryInput()"
-          placeholder="Search titles, abstracts, keywords ..."
-          class="flex-1 min-w-0 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-        <button x-show="activeTab === 'publications'" @click="searchPublications()"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">Search</button>
-        <button x-show="activeTab === 'authors'" @click="openNewAuthor()"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">
-          + Add Author
-        </button>
-        <button x-show="activeTab === 'keywords'" @click="openNewKeyword()"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">
-          + Add Keyword
-        </button>
-        <button x-show="activeTab === 'languages'" @click="openNewLanguage()"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">
-          + Add Language
-        </button>
-        <button x-show="activeTab === 'publicationTypes'" @click="openNewPublicationType()"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">
-          + Add Publication Type
-        </button>
       </div>
 
       <div class="flex items-center gap-2 shrink-0 ml-auto">
-        <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl p-0.5 text-xs font-medium shrink-0">
+        <div x-show="activeTab === 'publications'" class="flex items-center bg-gray-100 border border-gray-200 rounded-xl p-0.5 text-xs font-medium shrink-0">
           <button
             @click="searchProvider = 'typesense'; localStorage.setItem('searchProvider','typesense'); refreshSearchProvider()"
             :class="searchProvider === 'typesense' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'"
@@ -93,7 +47,7 @@
             SQL
           </button>
         </div>
-        <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl p-0.5 text-xs font-medium shrink-0">
+        <div x-show="activeTab === 'publications'" class="flex items-center bg-gray-100 border border-gray-200 rounded-xl p-0.5 text-xs font-medium shrink-0">
           <button
             @click="fuzzyFilters = false; localStorage.setItem('fuzzyFilters', 'false')"
             :class="!fuzzyFilters ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'"
@@ -120,9 +74,28 @@
         </button>
       </div>
     </div>
+    <div class="border-t border-gray-100">
+      <nav class="max-w-7xl mx-auto px-4 py-2 flex gap-1 overflow-x-auto">
+        <button @click="switchTab('publications')"
+          :class="activeTab === 'publications' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0">Publications</button>
+        <button @click="switchTab('authors')"
+          :class="activeTab === 'authors' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0">Authors</button>
+        <button @click="switchTab('keywords')"
+          :class="activeTab === 'keywords' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0">Keywords</button>
+        <button @click="switchTab('languages')"
+          :class="activeTab === 'languages' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0">Languages</button>
+        <button @click="switchTab('publicationTypes')"
+          :class="activeTab === 'publicationTypes' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0">Publication Types</button>
+      </nav>
+    </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-4.5rem)] flex flex-col overflow-hidden">
+  <main class="max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
 
     <!-- Loading -->
     <div x-show="loading" class="flex justify-center py-12">
@@ -250,6 +223,16 @@
       <!-- Right content: Results (3/4 width) -->
       <div class="w-3/4 min-w-0 overflow-y-auto scrollbar-hide">
 
+        <div class="flex gap-2 mb-4">
+          <input type="search" x-model="query"
+            @keyup.enter="searchPublications()"
+            @input.debounce.400ms="onQueryInput()"
+            placeholder="Search titles, abstracts, keywords ..."
+            class="flex-1 min-w-0 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <button @click="searchPublications()"
+            class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 shrink-0">Search</button>
+        </div>
+
         <!-- Status bar + top pagination -->
         <div class="flex items-center gap-2 mb-4">
           <span class="text-xs text-gray-400" x-show="!isSearchMode" x-text="'Found ' + total + ' publications'"></span>
@@ -257,8 +240,17 @@
           <span x-show="activeFilterCount > 0"
             class="ml-2 bg-indigo-600 text-white text-xs rounded-full px-1.5 leading-5"
             x-text="activeFilterCount + ' filter' + (activeFilterCount > 1 ? 's' : '')"></span>
+          <div class="relative ml-auto">
+            <button @click="rebuildSearchIndex()" :disabled="rebuildingIndex"
+              class="px-3 py-2 rounded-lg text-xs font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-wait">
+              <span x-show="!rebuildingIndex">Rebuild Search Index</span>
+              <span x-show="rebuildingIndex">Rebuilding&hellip;</span>
+            </button>
+            <span x-show="rebuildError" x-text="rebuildError"
+              class="absolute right-0 top-full mt-1 z-10 w-72 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 shadow"></span>
+          </div>
           <button @click="openNew()"
-            class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+            class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
             + Add Publication
           </button>
           <div x-show="totalPages > 1" class="flex items-center gap-2">
@@ -343,7 +335,9 @@
 
       <div class="flex items-center mb-4">
         <span class="text-xs text-gray-400" x-text="'Found ' + authorsTotal + ' authors'"></span>
-        <div x-show="authorsTotalPages > 1" class="ml-auto flex items-center gap-2">
+        <button @click="openNewAuthor()"
+          class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">+ Add Author</button>
+        <div x-show="authorsTotalPages > 1" class="ml-2 flex items-center gap-2">
           <button @click="changeAuthorsPage(authorsPage - 1)" :disabled="authorsPage <= 1"
             class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
           <span class="text-xs text-gray-500" x-text="'Page ' + authorsPage + ' / ' + authorsTotalPages"></span>
@@ -407,7 +401,9 @@
 
       <div class="flex items-center mb-4">
         <span class="text-xs text-gray-400" x-text="'Found ' + keywordsTotal + ' keywords'"></span>
-        <div x-show="keywordsTotalPages > 1" class="ml-auto flex items-center gap-2">
+        <button @click="openNewKeyword()"
+          class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">+ Add Keyword</button>
+        <div x-show="keywordsTotalPages > 1" class="ml-2 flex items-center gap-2">
           <button @click="changeKeywordsPage(keywordsPage - 1)" :disabled="keywordsPage <= 1"
             class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
           <span class="text-xs text-gray-500" x-text="'Page ' + keywordsPage + ' / ' + keywordsTotalPages"></span>
@@ -469,7 +465,9 @@
 
       <div class="flex items-center mb-4">
         <span class="text-xs text-gray-400" x-text="'Found ' + languagesTotal + ' languages'"></span>
-        <div x-show="languagesTotalPages > 1" class="ml-auto flex items-center gap-2">
+        <button @click="openNewLanguage()"
+          class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">+ Add Language</button>
+        <div x-show="languagesTotalPages > 1" class="ml-2 flex items-center gap-2">
           <button @click="changeLanguagesPage(languagesPage - 1)" :disabled="languagesPage <= 1"
             class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
           <span class="text-xs text-gray-500" x-text="'Page ' + languagesPage + ' / ' + languagesTotalPages"></span>
@@ -531,7 +529,9 @@
 
       <div class="flex items-center mb-4">
         <span class="text-xs text-gray-400" x-text="'Found ' + pubTypesTotal + ' publication types'"></span>
-        <div x-show="pubTypesTotalPages > 1" class="ml-auto flex items-center gap-2">
+        <button @click="openNewPublicationType()"
+          class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">+ Add Publication Type</button>
+        <div x-show="pubTypesTotalPages > 1" class="ml-2 flex items-center gap-2">
           <button @click="changePubTypesPage(pubTypesPage - 1)" :disabled="pubTypesPage <= 1"
             class="px-3 py-1 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
           <span class="text-xs text-gray-500" x-text="'Page ' + pubTypesPage + ' / ' + pubTypesTotalPages"></span>

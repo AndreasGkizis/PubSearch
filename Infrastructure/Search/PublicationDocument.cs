@@ -39,4 +39,7 @@ public class PublicationDocument
 
     [JsonPropertyName("last_modified_timestamp")]
     public long LastModifiedTimestamp { get; set; }
+
+    [JsonPropertyName("content_hash")]
+    public string ContentHash { get; set; } = string.Empty;
 }
