@@ -116,7 +116,7 @@ public sealed class SearchIndexReconciliationTests
     [Fact]
     public async Task TypesenseOutage_DoesNotBreakSqlCrud_AndRecoveryCatchesUp()
     {
-        await _factory.StopTypesenseAsync();
+        await _factory.PauseTypesenseAsync();
         int id;
         try
         {
@@ -125,7 +125,7 @@ public sealed class SearchIndexReconciliationTests
         }
         finally
         {
-            await _factory.StartTypesenseAsync();
+            await _factory.ResumeTypesenseAsync();
         }
 
         var recovered = await WaitForDocumentAsync(id, document => document is not null, TimeSpan.FromSeconds(15));
@@ -211,6 +211,10 @@ public sealed class SearchIndexReconciliationTests
             catch (TypesenseApiServiceUnavailableException)
             {
                 // Expected while Typesense completes restart.
+            }
+            catch (HttpRequestException)
+            {
+                // Expected while the restarted container begins accepting connections.
             }
 
             if (predicate(document)) return document;

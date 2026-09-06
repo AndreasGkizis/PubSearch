@@ -102,19 +102,17 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
 
     public async Task InitializeAsync()
     {
-        // Podman's Docker compatibility API is more reliable when container
-        // lifecycle operations are not issued concurrently.
         await _dbContainer.StartAsync();
         await WaitForSqlServerAsync();
         await _typesenseContainer.StartAsync();
         await WaitForTypesenseAsync();
     }
 
-    public Task StopTypesenseAsync() => _typesenseContainer.StopAsync();
+    public Task PauseTypesenseAsync() => _typesenseContainer.PauseAsync();
 
-    public async Task StartTypesenseAsync()
+    public async Task ResumeTypesenseAsync()
     {
-        await _typesenseContainer.StartAsync();
+        await _typesenseContainer.UnpauseAsync();
         await WaitForTypesenseAsync();
     }
 
