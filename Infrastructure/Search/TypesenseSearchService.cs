@@ -16,7 +16,7 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
         var searchParams = new SearchParameters(searchText, "title,abstract,keywords,authors,body")
         {
             QueryByWeights = "5,3,2,2,1",
-            FilterBy = BuildFilterBy(filters),
+            FilterBy = TypesenseFilterBuilder.Build(filters),
             Page = page,
             PerPage = pageSize,
             HighlightFields = "title,abstract,body,authors,keywords",
@@ -78,38 +78,6 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
         }).ToList();
 
         return (items, result.Found);
-    }
-
-    private static string? BuildFilterBy(SearchFilters filters)
-    {
-        var parts = new List<string>();
-
-        if (filters.YearFrom.HasValue)
-            parts.Add($"year:>={filters.YearFrom.Value}");
-
-        if (filters.YearTo.HasValue)
-            parts.Add($"year:<={filters.YearTo.Value}");
-
-        if (filters is { Authors.Count: > 0 })
-            parts.Add($"authors:[{string.Join(",", filters.Authors.Select(EscapeFilterValue))}]");
-
-        if (filters is { Keywords.Count: > 0 })
-            parts.Add($"keywords:[{string.Join(",", filters.Keywords.Select(EscapeFilterValue))}]");
-
-        if (filters is { Languages.Count: > 0 })
-            parts.Add($"languages:[{string.Join(",", filters.Languages.Select(EscapeFilterValue))}]");
-
-        if (filters is { PublicationTypes.Count: > 0 })
-            parts.Add($"publication_types:[{string.Join(",", filters.PublicationTypes.Select(EscapeFilterValue))}]");
-
-        return parts.Count > 0 ? string.Join(" && ", parts) : null;
-    }
-
-    private static string EscapeFilterValue(string value)
-    {
-        // Typesense filter values that contain commas or backticks need to be backtick-escaped
-        var escaped = value.Replace("`", "\\`");
-        return $"`{escaped}`";
     }
 
     private static string? NullIfEmpty(string? value)
