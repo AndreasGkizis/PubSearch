@@ -1,5 +1,4 @@
 using ResearchPublications.Application.DTOs;
-using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 using Keyword = ResearchPublications.Domain.Entities.Keyword;
@@ -8,7 +7,7 @@ using PublicationType = ResearchPublications.Domain.Entities.PublicationType;
 
 namespace ResearchPublications.Application.Services;
 
-public class PublicationService(IPublicationRepository repository, CacheService cacheService, ITypesenseIndexingService indexingService)
+public class PublicationService(IPublicationRepository repository, CacheService cacheService)
 {
     public async Task<(IEnumerable<PublicationSummaryDto> Items, int TotalCount)> GetSummariesAsync(
         int page, int pageSize, SearchFilters? filters = null)
@@ -37,10 +36,6 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         await cacheService.RefreshLanguageFilterOptionsAsync();
         await cacheService.RefreshPublicationTypeFilterOptionsAsync();
 
-        var created = await repository.GetByIdAsync(id);
-        if (created is not null)
-            await indexingService.IndexPublicationAsync(created);
-
         return id;
     }
 
@@ -56,9 +51,6 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         await cacheService.RefreshLanguageFilterOptionsAsync();
         await cacheService.RefreshPublicationTypeFilterOptionsAsync();
 
-        var updated = await repository.GetByIdAsync(id);
-        if (updated is not null)
-            await indexingService.IndexPublicationAsync(updated);
     }
 
     public async Task DeleteAsync(int id)
@@ -70,8 +62,6 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         await cacheService.RefreshKeywordFilterOptionsAsync();
         await cacheService.RefreshLanguageFilterOptionsAsync();
         await cacheService.RefreshPublicationTypeFilterOptionsAsync();
-
-        await indexingService.RemovePublicationAsync(id);
     }
 
     // ── Mapping helpers ────────────────────────────────────────────────────

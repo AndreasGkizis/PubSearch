@@ -9,11 +9,21 @@ namespace ResearchPublications.API.Controllers;
 
 [ApiController]
 [Route("api/search")]
-public class SearchController(IServiceProvider serviceProvider, ITypesenseClient typesense) : ControllerBase
+public class SearchController(
+    IServiceProvider serviceProvider,
+    ITypesenseClient typesense,
+    ITypesensePublicationIndexService indexService) : ControllerBase
 {
     private static readonly HashSet<string> ValidProviders = ["typesense", "mssql"];
     private const string CollectionName = "publications";
     private static readonly HashSet<string> ValidFacetFields = ["authors", "keywords", "languages", "publication_types"];
+
+    [HttpPost("rebuild-index")]
+    public async Task<IActionResult> RebuildIndex(CancellationToken cancellationToken)
+    {
+        var result = await indexService.RebuildAsync(cancellationToken);
+        return result.Success ? Ok(result) : StatusCode(StatusCodes.Status503ServiceUnavailable, result);
+    }
 
     [HttpGet]
     public async Task<IActionResult> Search(

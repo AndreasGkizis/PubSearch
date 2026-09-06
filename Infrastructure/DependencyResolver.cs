@@ -33,6 +33,10 @@ public static class DependencyResolver
 
         services.AddSingleton(typesenseSettings);
 
+        var searchIndexSyncSettings = config.GetSection("SearchIndexSync").Get<SearchIndexSyncSettings>()
+            ?? new SearchIndexSyncSettings();
+        services.AddSingleton(searchIndexSyncSettings);
+
         services.AddTypesenseClient(opts =>
         {
             opts.ApiKey = typesenseSettings.ApiKey;
@@ -46,7 +50,9 @@ public static class DependencyResolver
         services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
         services.AddKeyedScoped<ISearchService, TypesenseSearchService>("typesense");
         services.AddKeyedScoped<ISearchService, MssqlSearchService>("mssql");
-        services.AddScoped<ITypesenseIndexingService, TypesenseIndexingService>();
+        services.AddSingleton<SearchIndexSyncLock>();
+        services.AddScoped<ITypesensePublicationIndexService, TypesensePublicationIndexService>();
+        services.AddHostedService<SearchIndexSyncWorker>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();
 

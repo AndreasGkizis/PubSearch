@@ -74,6 +74,8 @@ function adminApp() {
     deleteTarget: null,
     deleting: false,
     toast: null,
+    rebuildingIndex: false,
+    rebuildError: null,
 
     // ── Search & filter state (publications tab) ──
     query: '',
@@ -599,6 +601,23 @@ function adminApp() {
     },
 
     // ── Toast ───────────────────────────────────────────────────
+    async rebuildSearchIndex() {
+      this.rebuildingIndex = true;
+      this.rebuildError = null;
+      try {
+        const res = await fetch('/api/search/rebuild-index', { method: 'POST' });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) {
+          throw new Error(result.errorMessage || 'Search index rebuild failed.');
+        }
+        this.showToast(`Index rebuilt: ${result.added} added, ${result.deleted} removed.`);
+      } catch (error) {
+        this.rebuildError = error.message || 'Search index rebuild failed.';
+      } finally {
+        this.rebuildingIndex = false;
+      }
+    },
+
     showToast(msg) {
       this.toast = msg;
       setTimeout(() => { this.toast = null; }, 3000);

@@ -39,10 +39,13 @@ using (var scope = app.Services.CreateScope())
     await cacheService.RefreshLanguageFilterOptionsAsync();
     await cacheService.RefreshPublicationTypeFilterOptionsAsync();
 
-    // Initialize Typesense collection and index all publications
-    var indexingService = scope.ServiceProvider.GetRequiredService<ITypesenseIndexingService>();
-    await indexingService.EnsureCollectionExistsAsync();
-    await indexingService.IndexAllPublicationsAsync();
+    var syncSettings = scope.ServiceProvider.GetRequiredService<ResearchPublications.Infrastructure.Settings.SearchIndexSyncSettings>();
+    if (syncSettings.Enabled)
+    {
+        // Typesense failures are reported by the index service and do not prevent startup.
+        var indexService = scope.ServiceProvider.GetRequiredService<ITypesensePublicationIndexService>();
+        await indexService.SynchronizeFromSqlAsync();
+    }
 }
 
 // ── Ensure PDF storage folder exists ──────────────────────────────────────
@@ -62,4 +65,3 @@ app.Run();
 
 // Required for WebApplicationFactory<Program> in integration tests
 public partial class Program;
-
