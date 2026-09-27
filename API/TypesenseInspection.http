@@ -1,0 +1,30 @@
+@TypesenseBaseUrl = http://localhost:8108
+@TypesenseApiKey = devkey123
+@Collection = publications
+@DocumentId = 1
+@OcrQuery = mosaicscan0001
+
+### List collections and document counts
+GET {{TypesenseBaseUrl}}/collections
+X-TYPESENSE-API-KEY: {{TypesenseApiKey}}
+Accept: application/json
+
+### Inspect the publications collection schema
+GET {{TypesenseBaseUrl}}/collections/{{Collection}}
+X-TYPESENSE-API-KEY: {{TypesenseApiKey}}
+Accept: application/json
+
+### Inspect one full document, including OCR Markdown
+GET {{TypesenseBaseUrl}}/collections/{{Collection}}/documents/{{DocumentId}}
+X-TYPESENSE-API-KEY: {{TypesenseApiKey}}
+Accept: application/json
+
+### Search OCR text only
+GET {{TypesenseBaseUrl}}/collections/{{Collection}}/documents/search?q={{OcrQuery}}&query_by=ocr_text&highlight_fields=ocr_text&per_page=20
+X-TYPESENSE-API-KEY: {{TypesenseApiKey}}
+Accept: application/json
+
+### Export OCR state for every document
+GET {{TypesenseBaseUrl}}/collections/{{Collection}}/documents/export?include_fields=id,title,pdf_file_name,body,ocr_status,ocr_error,ocr_text
+X-TYPESENSE-API-KEY: {{TypesenseApiKey}}
+Accept: application/json

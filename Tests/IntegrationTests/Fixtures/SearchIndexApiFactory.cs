@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ResearchPublications.Infrastructure.Persistence;
+using ResearchPublications.Infrastructure.Ocr;
 using ResearchPublications.Infrastructure.Settings;
 using Typesense;
 using Typesense.Setup;
@@ -22,6 +23,7 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
 {
     private const string DbPassword = "Test@Strong12345!";
     private const string TypesenseApiKey = "search-index-tests";
+    private readonly string _pdfPath = Path.Combine(Path.GetTempPath(), $"pubsearch-index-tests-{Guid.NewGuid():N}");
 
     private readonly IContainer _dbContainer = new ContainerBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
@@ -37,6 +39,7 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
         .Build();
 
     public ITypesenseClient TypesenseClient => Services.GetRequiredService<ITypesenseClient>();
+    internal FakeOcrPdfProcessor OcrProcessor { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -55,7 +58,8 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
                 ["TypesenseSettings:ApiKey"] = TypesenseApiKey,
                 ["SearchIndexSync:Enabled"] = "true",
                 ["SearchIndexSync:IntervalSeconds"] = "1",
-                ["PdfStorage:Path"] = Path.Combine(Path.GetTempPath(), $"pubsearch-index-tests-{Guid.NewGuid():N}"),
+                ["PdfStorage:Path"] = _pdfPath,
+                ["Ocr:Enabled"] = "false",
             });
         });
 
@@ -81,6 +85,12 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
                 services.Remove(syncSettingsDescriptor);
             services.AddSingleton(new SearchIndexSyncSettings { Enabled = true, IntervalSeconds = 1 });
 
+            var ocrSettingsDescriptor = services.SingleOrDefault(
+                descriptor => descriptor.ServiceType == typeof(OcrSettings));
+            if (ocrSettingsDescriptor is not null)
+                services.Remove(ocrSettingsDescriptor);
+            services.AddSingleton(new OcrSettings { Enabled = false });
+
             foreach (var descriptor in services.Where(item => item.ServiceType == typeof(ITypesenseClient)).ToList())
                 services.Remove(descriptor);
 
@@ -95,6 +105,12 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
                         "http")
                 ];
             });
+
+            var processorDescriptor = services.SingleOrDefault(
+                descriptor => descriptor.ServiceType == typeof(IOcrPdfProcessor));
+            if (processorDescriptor is not null)
+                services.Remove(processorDescriptor);
+            services.AddSingleton<IOcrPdfProcessor>(OcrProcessor);
         });
 
         builder.UseEnvironment("Development");
@@ -166,5 +182,24 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
         }
 
         throw new TimeoutException("Typesense did not become ready.");
+    }
+}
+
+internal sealed class FakeOcrPdfProcessor : IOcrPdfProcessor
+{
+    private readonly Queue<Func<string>> _responses = new();
+
+    public int CallCount { get; private set; }
+
+    public void ReturnNext(string markdown) => _responses.Enqueue(() => markdown);
+
+    public void FailNext(string message) => _responses.Enqueue(() => throw new InvalidOperationException(message));
+
+    public Task<string> ProcessAsync(Stream pdfStream, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CallCount++;
+        var result = _responses.Count > 0 ? _responses.Dequeue()() : $"baseline OCR {CallCount}";
+        return Task.FromResult(result);
     }
 }

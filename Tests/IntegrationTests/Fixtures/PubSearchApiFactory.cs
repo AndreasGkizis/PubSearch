@@ -48,6 +48,7 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
                 ["SqlSettings:Password"] = DbPassword,
                 ["PdfStorage:Path"]      = Path.Combine(Path.GetTempPath(), $"pubsearch-tests-{Guid.NewGuid():N}"),
                 ["SearchIndexSync:Enabled"] = "false",
+                ["Ocr:Enabled"] = "false",
             });
         });
 
@@ -76,6 +77,12 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
             if (syncSettingsDescriptor is not null)
                 services.Remove(syncSettingsDescriptor);
             services.AddSingleton(new SearchIndexSyncSettings { Enabled = false });
+
+            var ocrSettingsDescriptor = services.SingleOrDefault(
+                descriptor => descriptor.ServiceType == typeof(OcrSettings));
+            if (ocrSettingsDescriptor is not null)
+                services.Remove(ocrSettingsDescriptor);
+            services.AddSingleton(new OcrSettings { Enabled = false });
         });
 
         builder.UseEnvironment("Development");

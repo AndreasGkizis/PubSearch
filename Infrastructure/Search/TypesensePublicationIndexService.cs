@@ -103,26 +103,37 @@ internal sealed class TypesensePublicationIndexService(
                 && !string.Equals(indexed.ContentHash, document.ContentHash, StringComparison.Ordinal))
             .ToList();
         var unchanged = sqlDocuments.Count - addedDocuments.Count - updatedDocuments.Count;
-        var importCandidates = addedDocuments.Concat(updatedDocuments).ToList();
         var added = 0;
         var updated = 0;
         var errors = new List<string>();
 
-        if (importCandidates.Count > 0)
+        if (addedDocuments.Count > 0)
         {
             var importResults = await typesense.ImportDocuments(
-                CollectionName, importCandidates, 40, ImportType.Upsert);
+                CollectionName, addedDocuments, 40, ImportType.Upsert);
 
             for (var i = 0; i < importResults.Count; i++)
             {
-                if (importResults[i].Success)
-                {
-                    if (i < addedDocuments.Count) added++;
-                    else updated++;
-                }
+                if (importResults[i].Success) added++;
                 else
                 {
-                    errors.Add(importResults[i].Error ?? $"Document {importCandidates[i].Id} failed to import.");
+                    errors.Add(importResults[i].Error ?? $"Document {addedDocuments[i].Id} failed to import.");
+                }
+            }
+        }
+
+        if (updatedDocuments.Count > 0)
+        {
+            // Update is intentionally partial: OCR fields are owned by the OCR worker.
+            var importResults = await typesense.ImportDocuments(
+                CollectionName, updatedDocuments, 40, ImportType.Update);
+
+            for (var i = 0; i < importResults.Count; i++)
+            {
+                if (importResults[i].Success) updated++;
+                else
+                {
+                    errors.Add(importResults[i].Error ?? $"Document {updatedDocuments[i].Id} failed to import.");
                 }
             }
         }
@@ -151,7 +162,20 @@ internal sealed class TypesensePublicationIndexService(
     {
         try
         {
-            await typesense.RetrieveCollection(CollectionName, cancellationToken);
+            var collection = await typesense.RetrieveCollection(CollectionName, cancellationToken);
+            var existingFields = collection.Fields.Select(field => field.Name).ToHashSet(StringComparer.Ordinal);
+            var missingFields = CreateOcrFields()
+                .Where(field => !existingFields.Contains(field.Name))
+                .Select(field => new UpdateSchemaField(
+                    field.Name,
+                    field.Type,
+                    facet: field.Facet,
+                    optional: field.Optional,
+                    index: field.Index))
+                .ToList();
+
+            if (missingFields.Count > 0)
+                await typesense.UpdateCollection(CollectionName, new UpdateSchema(missingFields));
         }
         catch (TypesenseApiNotFoundException)
         {
@@ -174,7 +198,19 @@ internal sealed class TypesensePublicationIndexService(
             new Field("pdf_file_name", FieldType.String, facet: false, optional: true, index: false),
             new Field("last_modified_timestamp", FieldType.Int64, facet: false),
             new Field("content_hash", FieldType.String, facet: false, optional: true, index: false),
+            .. CreateOcrFields()
         ]);
+
+    private static Field[] CreateOcrFields() =>
+    [
+        new Field("ocr_text", FieldType.String, facet: false, optional: true, index: true),
+        new Field("ocr_source_file_name", FieldType.String, facet: false, optional: true, index: false),
+        new Field("ocr_source_hash", FieldType.String, facet: false, optional: true, index: false),
+        new Field("ocr_pipeline_version", FieldType.String, facet: false, optional: true, index: false),
+        new Field("ocr_status", FieldType.String, facet: false, optional: true, index: false),
+        new Field("ocr_error", FieldType.String, facet: false, optional: true, index: false),
+        new Field("ocr_retry_after_timestamp", FieldType.Int64, facet: false, optional: true, index: false)
+    ];
 
     private static PublicationDocument ToDocument(Publication publication)
     {

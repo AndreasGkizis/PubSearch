@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Domain.Interfaces;
 using ResearchPublications.Infrastructure.Files;
+using ResearchPublications.Infrastructure.Ocr;
 using ResearchPublications.Infrastructure.Persistence;
 using ResearchPublications.Infrastructure.Persistence.Repositories;
 using ResearchPublications.Infrastructure.Search;
@@ -37,6 +38,9 @@ public static class DependencyResolver
             ?? new SearchIndexSyncSettings();
         services.AddSingleton(searchIndexSyncSettings);
 
+        var ocrSettings = config.GetSection("Ocr").Get<OcrSettings>() ?? new OcrSettings();
+        services.AddSingleton(ocrSettings);
+
         services.AddTypesenseClient(opts =>
         {
             opts.ApiKey = typesenseSettings.ApiKey;
@@ -50,9 +54,17 @@ public static class DependencyResolver
         services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
         services.AddKeyedScoped<ISearchService, TypesenseSearchService>("typesense");
         services.AddKeyedScoped<ISearchService, MssqlSearchService>("mssql");
+        services.AddScoped<IOcrSearchService, TypesenseOcrSearchService>();
         services.AddSingleton<SearchIndexSyncLock>();
         services.AddScoped<ITypesensePublicationIndexService, TypesensePublicationIndexService>();
         services.AddHostedService<SearchIndexSyncWorker>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IOcrPageRenderer, PdfToImagePageRenderer>();
+        services.AddHttpClient<IOllamaOcrClient, OllamaOcrClient>(client =>
+            client.BaseAddress = new Uri(ocrSettings.OllamaBaseUrl.TrimEnd('/') + "/"));
+        services.AddScoped<IOcrPdfProcessor, OcrPdfProcessor>();
+        services.AddScoped<IOcrIndexingService, TypesenseOcrIndexingService>();
+        services.AddHostedService<OcrWorker>();
         services.AddScoped<IFileService, LocalFileService>();
         services.AddTransient<DbSeeder>();
 

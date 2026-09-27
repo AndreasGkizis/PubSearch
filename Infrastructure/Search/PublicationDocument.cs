@@ -42,4 +42,32 @@ public class PublicationDocument
 
     [JsonPropertyName("content_hash")]
     public string ContentHash { get; set; } = string.Empty;
+
+    [JsonPropertyName("ocr_text")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrText { get; set; }
+
+    [JsonPropertyName("ocr_source_file_name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrSourceFileName { get; set; }
+
+    [JsonPropertyName("ocr_source_hash")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrSourceHash { get; set; }
+
+    [JsonPropertyName("ocr_pipeline_version")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrPipelineVersion { get; set; }
+
+    [JsonPropertyName("ocr_status")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrStatus { get; set; }
+
+    [JsonPropertyName("ocr_error")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OcrError { get; set; }
+
+    [JsonPropertyName("ocr_retry_after_timestamp")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? OcrRetryAfterTimestamp { get; set; }
 }
