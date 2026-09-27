@@ -32,7 +32,6 @@ function searchApp() {
     loading: false,
     isSearchMode: false,
     lastQuery: '',
-    searchProvider: localStorage.getItem('searchProvider') || 'typesense',
     lastElapsedMs: null,
 
     // ── Computed ─────────────────────────────────────────────────
@@ -149,12 +148,6 @@ function searchApp() {
       }
     },
 
-    refreshSearchProvider() {
-      if (this.isSearchMode) {
-        this.search();
-      }
-    },
-
     async search() {
       if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
       this.loading = true;
@@ -162,7 +155,7 @@ function searchApp() {
       this.lastQuery = this.query;
       try {
         const params = new URLSearchParams({
-          q: this.query, page: this.page, pageSize: this.pageSize, provider: this.searchProvider,
+          q: this.query, page: this.page, pageSize: this.pageSize,
         });
         buildFilterParams(params, this._getFilters());
         const res  = await fetch('/api/search?' + params);

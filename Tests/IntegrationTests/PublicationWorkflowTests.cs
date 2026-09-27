@@ -94,21 +94,6 @@ public class PublicationWorkflowTests(PubSearchApiFactory factory) : Integration
         Assert.NotNull(created);
         var publicationId = created!.Id;
 
-        // Find publication via search (SQL provider)
-        var searchUrl =
-            "/api/search?q=" + Uri.EscapeDataString(originalTitle) +
-            "&provider=mssql" +
-            "&authors=" + Uri.EscapeDataString(authorFullName) +
-            "&keywords=" + Uri.EscapeDataString(keywordA) +
-            "&languages=" + Uri.EscapeDataString(language) +
-            "&publicationTypes=" + Uri.EscapeDataString(publicationType);
-
-        var searchResponse = await Client.GetAsync(searchUrl);
-        Assert.Equal(HttpStatusCode.OK, searchResponse.StatusCode);
-        var searchResult = await searchResponse.Content.ReadFromJsonAsync<SearchResponse>();
-        Assert.NotNull(searchResult);
-        Assert.Contains(searchResult!.Items, i => i.Id == publicationId);
-
         // Edit publication
         var updatePayload = createPayload with
         {
@@ -138,12 +123,5 @@ public class PublicationWorkflowTests(PubSearchApiFactory factory) : Integration
 
     private sealed record UploadResponse(string FileName);
 
-    private sealed record SearchResponse(
-        List<SearchResultDto> Items,
-        int Total,
-        int Page,
-        int PageSize,
-        string Provider,
-        long ElapsedMs);
 }
 

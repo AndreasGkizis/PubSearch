@@ -61,6 +61,31 @@ public sealed class OcrSearchIntegrationTests
     }
 
     [Fact]
+    public async Task DefaultSearch_IncludesOcrMatchesAndPrefersOcrSnippet()
+    {
+        var token = $"defaultocr{Guid.NewGuid():N}";
+        var document = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
+            .First();
+        await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new AbstractUpdate
+        {
+            Abstract = $"Abstract also contains {token}."
+        });
+        await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new OcrTextUpdate
+        {
+            OcrText = $"OCR-only context {token} on scanned page."
+        });
+
+        var result = await _client.GetFromJsonAsync<RegularSearchResponse>(
+            $"/api/search?q={token}");
+
+        var match = Assert.Single(result!.Items);
+        Assert.Equal(int.Parse(document.Id), match.Id);
+        Assert.True(match.IsOcrSnippet);
+        Assert.Contains("OCR-only context", match.AbstractSnippet);
+        Assert.Contains("<mark>", match.AbstractSnippet);
+    }
+
+    [Fact]
     public async Task UnchangedPdf_IsNotOcredTwice()
     {
         await ProcessOcrAsync();
@@ -130,7 +155,7 @@ public sealed class OcrSearchIntegrationTests
         var detail = await _client.GetFromJsonAsync<PublicationDetailDto>($"/api/publications/{id}");
         Assert.True(string.IsNullOrEmpty(detail!.Body));
         var metadataSearch = await _client.GetFromJsonAsync<RegularSearchResponse>(
-            $"/api/search?q={Uri.EscapeDataString(title)}&provider=typesense");
+            $"/api/search?q={Uri.EscapeDataString(title)}");
         Assert.Contains(metadataSearch!.Items, item => item.Id == id);
     }
 
@@ -189,6 +214,12 @@ public sealed class OcrSearchIntegrationTests
     {
         [JsonPropertyName("title")]
         public string Title { get; init; } = string.Empty;
+    }
+
+    private sealed class AbstractUpdate
+    {
+        [JsonPropertyName("abstract")]
+        public string Abstract { get; init; } = string.Empty;
     }
 
     private sealed record UploadResponse(string FileName);

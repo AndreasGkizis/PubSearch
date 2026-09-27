@@ -81,7 +81,6 @@ function adminApp() {
     query: '',
     lastQuery: '',
     isSearchMode: false,
-    searchProvider: localStorage.getItem('searchProvider') || 'typesense',
     fuzzyFilters: localStorage.getItem('fuzzyFilters') === 'true',
     filterYearFrom: '',
     filterYearTo: '',
@@ -231,12 +230,6 @@ function adminApp() {
       if (!this.query.trim()) { this.loadAll(); } else { this.searchPublications(); }
     },
 
-    refreshSearchProvider() {
-      if (this.activeTab === 'publications' && this.isSearchMode) {
-        this.searchPublications();
-      }
-    },
-
     async searchPublications() {
       if (!this.query.trim()) { this.page = 1; await this.loadAll(); return; }
       this.loading = true;
@@ -247,7 +240,6 @@ function adminApp() {
           q: this.query,
           page: this.page,
           pageSize: this.pageSize,
-          provider: this.searchProvider,
         });
         buildFilterParams(params, this._getFilters());
         const res  = await fetch('/api/search?' + params);

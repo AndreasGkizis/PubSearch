@@ -232,7 +232,7 @@ The API starts on `http://localhost:5000` (or `https://localhost:5001`).
 ResearchPublications/
 ├── Domain/               ←  Entities, value objects, interfaces (no dependencies)
 ├── Application/          ←  DTOs, PublicationService, ISearchService interface
-├── Infrastructure/       ←  Dapper + SP repos, MssqlSearchService, LocalFileService
+├── Infrastructure/       ←  SQL repositories, Typesense search/indexing, LocalFileService
 └── API/                  ←  ASP.NET Core controllers, middleware, static frontend
 ```
 
@@ -240,23 +240,11 @@ ResearchPublications/
 
 ---
 
-## Swapping Implementations
+## Search and storage roles
 
-### Swap the search engine
+SQL Server is the source of truth for publication metadata and the stored PDF filename. PDF bytes live in configured file storage. Typesense is the search index/cache: its publication metadata is derived from SQL, while OCR text and OCR processing state are derived from stored PDFs and can be regenerated.
 
-In `API/Program.cs`, replace:
-
-```csharp
-builder.Services.AddScoped<ISearchService, MssqlSearchService>();
-```
-
-with:
-
-```csharp
-builder.Services.AddScoped<ISearchService, TypesenseSearchService>();
-```
-
-Implement `TypesenseSearchService : ISearchService` in Infrastructure — no other changes needed.
+Search is provided by Typesense only. It searches catalog metadata, body text, and OCR text extracted from scanned PDFs.
 
 ### Swap file storage
 

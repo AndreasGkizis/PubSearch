@@ -13,13 +13,13 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
     {
         var searchText = string.IsNullOrWhiteSpace(query) ? "*" : query;
 
-        var searchParams = new SearchParameters(searchText, "title,abstract,keywords,authors,body")
+        var searchParams = new SearchParameters(searchText, "title,abstract,keywords,authors,body,ocr_text")
         {
-            QueryByWeights = "5,3,2,2,1",
+            QueryByWeights = "5,3,2,2,1,1",
             FilterBy = TypesenseFilterBuilder.Build(filters),
             Page = page,
             PerPage = pageSize,
-            HighlightFields = "title,abstract,body,authors,keywords",
+            HighlightFields = "title,abstract,body,authors,keywords,ocr_text",
             HighlightStartTag = "<mark>",
             HighlightEndTag = "</mark>",
             HighlightAffixNumberOfTokens = 12,
@@ -36,11 +36,13 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
 
             var abstractHighlight = highlights.FirstOrDefault(h => h.Field == "abstract");
             var bodyHighlight = highlights.FirstOrDefault(h => h.Field == "body");
+            var ocrHighlight = highlights.FirstOrDefault(h => h.Field == "ocr_text");
             var titleHighlight = highlights.FirstOrDefault(h => h.Field == "title");
             var authorsHighlight = highlights.FirstOrDefault(h => h.Field == "authors");
             var keywordsHighlight = highlights.FirstOrDefault(h => h.Field == "keywords");
 
-            string? snippet = abstractHighlight?.Snippet
+            string? snippet = ocrHighlight?.Snippet
+                ?? abstractHighlight?.Snippet
                 ?? bodyHighlight?.Snippet
                 ?? (doc.Abstract.Length > 200 ? doc.Abstract[..200] + "\u2026" : NullIfEmpty(doc.Abstract));
 
@@ -69,6 +71,7 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
                 Languages = doc.Languages.Length > 0 ? string.Join(", ", doc.Languages) : null,
                 PublicationTypes = doc.PublicationTypes.Length > 0 ? string.Join(", ", doc.PublicationTypes) : null,
                 AbstractSnippet = snippet,
+                IsOcrSnippet = ocrHighlight?.Snippet is not null,
                 HighlightedTitle = titleHighlight?.Snippet,
                 HighlightedAuthors = highlightedAuthors,
                 HighlightedKeywords = highlightedKeywords,

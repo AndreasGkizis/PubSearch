@@ -52,8 +52,7 @@ public static class DependencyResolver
         services.AddScoped<IKeywordRepository, KeywordRepository>();
         services.AddScoped<ILanguageRepository, LanguageRepository>();
         services.AddScoped<IPublicationTypeRepository, PublicationTypeRepository>();
-        services.AddKeyedScoped<ISearchService, TypesenseSearchService>("typesense");
-        services.AddKeyedScoped<ISearchService, MssqlSearchService>("mssql");
+        services.AddScoped<ISearchService, TypesenseSearchService>();
         services.AddScoped<IOcrSearchService, TypesenseOcrSearchService>();
         services.AddSingleton<SearchIndexSyncLock>();
         services.AddScoped<ITypesensePublicationIndexService, TypesensePublicationIndexService>();

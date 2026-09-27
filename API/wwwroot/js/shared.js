@@ -51,7 +51,7 @@ function renderMarks(text) {
  *
  * - If the text already contains Typesense `<mark>` tags, those are styled and
  *   everything else is escaped.
- * - Otherwise a client-side regex match is used (SQL / fallback provider).
+ * - Otherwise a client-side regex match is used for unmarked text.
  * - When `isSearchMode` is false or `query` is empty the text is just escaped.
  */
 function highlightText(text, query, isSearchMode) {
@@ -61,7 +61,7 @@ function highlightText(text, query, isSearchMode) {
   // Typesense returns <mark>…</mark> in highlight snippets
   if (text.includes('<mark>')) return renderMarks(text);
 
-  // Fallback: client-side highlighting (SQL provider)
+  // Fallback: client-side highlighting for unmarked result text
   const safe = escapeHtml(text);
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp('(' + escaped + ')', 'gi');
