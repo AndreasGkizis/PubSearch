@@ -1,4 +1,3 @@
-using System.Text;
 using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -311,6 +310,7 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
             .RuleFor(p => p.Title, f =>
                 $"{f.PickRandom(TitlePrefixes)} {f.PickRandom(TitleSubjects)}")
             .RuleFor(p => p.Abstract, f => GenerateAbstract(f))
+            .RuleFor(p => p.Body, _ => null)
             .RuleFor(p => p.Year, f => f.Random.Int(2015, 2025))
             .RuleFor(p => p.DOI, f =>
                 $"10.{f.Random.Int(1000, 9999)}/{f.Random.AlphaNumeric(8)}")
@@ -353,11 +353,12 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
 
     private async Task GeneratePdfFilesAsync(List<Publication> publications)
     {
-        foreach (var pub in publications)
+        for (var index = 0; index < publications.Count; index++)
         {
+            var pub = publications[index];
             var safeName = SanitizeFileName(pub.Title) + ".pdf";
-            var pdfBytes = GenerateMinimalPdf(pub.Title);
-            using var stream = new MemoryStream(pdfBytes);
+            var seedPdf = SeedPdfGenerator.Generate(index + 1);
+            using var stream = new MemoryStream(seedPdf.PdfBytes, writable: false);
             pub.PdfFileName = await fileService.SavePdfAsync(stream, safeName);
         }
 
@@ -373,28 +374,6 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
             safe = safe.Replace(c, '_');
 
         return safe.Length > 80 ? safe[..80] : safe;
-    }
-
-    /// <summary>
-    /// Generates a minimal valid PDF containing the publication title on a single page.
-    /// </summary>
-    private static byte[] GenerateMinimalPdf(string title)
-    {
-        // Escape special PDF string characters
-        var escaped = title.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
-
-        var pdf = new StringBuilder();
-        pdf.Append("%PDF-1.4\n");
-        pdf.Append("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
-        pdf.Append("2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n");
-        pdf.Append("3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n");
-
-        var stream = $"BT /F1 12 Tf 72 720 Td ({escaped}) Tj ET";
-        pdf.Append($"4 0 obj<</Length {stream.Length}>>stream\n{stream}\nendstream endobj\n");
-        pdf.Append("5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n");
-        pdf.Append("xref\n0 6\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n0\n%%EOF\n");
-
-        return Encoding.ASCII.GetBytes(pdf.ToString());
     }
 
     private static int WordCount(string text) =>

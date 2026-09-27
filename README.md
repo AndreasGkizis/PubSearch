@@ -49,7 +49,8 @@ dotnet run --project API
 
 On startup the application will automatically:
 - Apply EF Core migrations to create/update the database schema
-- Seed the database with **50,000 publications**, **1,000 authors**, and **25 keywords** (via [Bogus](https://github.com/bchavez/Bogus) with a fixed seed — skipped if data already exists)
+- Seed the database with **150 publications**, **50 authors**, **100 keywords**, **6 languages**, and **5 publication types** (via [Bogus](https://github.com/bchavez/Bogus) with a fixed seed — skipped if data already exists)
+- Create one scanned-style, image-only PDF for every seeded publication. Each page contains deterministic mosaic-conservation prose and a unique `mosaicscan0001`-style OCR marker; `Publication.Body` remains empty.
 - Create the PDF storage directory if configured
 
 Then open [https://localhost:5001](https://localhost:5001) (or the port shown in console output).
@@ -109,6 +110,17 @@ Development settings live in `API/appsettings.Development.json`:
 ```
 
 PDF files are stored in the `pdfs/` directory at the repo root by default.
+
+### Regenerating seed PDFs
+
+The seeder does not rewrite an existing database. To replace older seed records and PDFs with the image-only fixtures, intentionally reset the development data and ignored PDF directory before restarting the API:
+
+```bash
+docker compose down -v
+rm -rf pdfs
+docker compose up -d
+dotnet run --project API
+```
 
 ---
 
