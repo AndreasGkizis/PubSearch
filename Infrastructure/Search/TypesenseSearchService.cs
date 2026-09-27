@@ -15,7 +15,7 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
 
         var searchParams = new SearchParameters(searchText, "title,abstract,keywords,authors,body,ocr_text")
         {
-            QueryByWeights = "5,3,2,2,1,1",
+            QueryByWeights = "5,4,2,2,1,1",
             FilterBy = TypesenseFilterBuilder.Build(filters),
             Page = page,
             PerPage = pageSize,
@@ -41,8 +41,7 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
             var authorsHighlight = highlights.FirstOrDefault(h => h.Field == "authors");
             var keywordsHighlight = highlights.FirstOrDefault(h => h.Field == "keywords");
 
-            string? snippet = ocrHighlight?.Snippet
-                ?? abstractHighlight?.Snippet
+            string? snippet = abstractHighlight?.Snippet
                 ?? bodyHighlight?.Snippet
                 ?? (doc.Abstract.Length > 200 ? doc.Abstract[..200] + "\u2026" : NullIfEmpty(doc.Abstract));
 
@@ -71,7 +70,8 @@ public class TypesenseSearchService(ITypesenseClient typesense) : ISearchService
                 Languages = doc.Languages.Length > 0 ? string.Join(", ", doc.Languages) : null,
                 PublicationTypes = doc.PublicationTypes.Length > 0 ? string.Join(", ", doc.PublicationTypes) : null,
                 AbstractSnippet = snippet,
-                IsOcrSnippet = ocrHighlight?.Snippet is not null,
+                IsAbstractMatch = abstractHighlight?.Snippet is not null,
+                OcrSnippet = ocrHighlight?.Snippet,
                 HighlightedTitle = titleHighlight?.Snippet,
                 HighlightedAuthors = highlightedAuthors,
                 HighlightedKeywords = highlightedKeywords,

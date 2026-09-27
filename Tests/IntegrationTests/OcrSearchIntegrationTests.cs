@@ -64,13 +64,19 @@ public sealed class OcrSearchIntegrationTests
     public async Task DefaultSearch_IncludesOcrMatchesAndPrefersOcrSnippet()
     {
         var token = $"defaultocr{Guid.NewGuid():N}";
-        var document = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
-            .First();
-        await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new AbstractUpdate
+        var documents = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
+            .Take(2).ToList();
+        var abstractMatch = documents[0];
+        var ocrOnlyMatch = documents[1];
+        await _factory.TypesenseClient.UpdateDocument("publications", abstractMatch.Id, new AbstractUpdate
         {
             Abstract = $"Abstract also contains {token}."
         });
-        await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new OcrTextUpdate
+        await _factory.TypesenseClient.UpdateDocument("publications", abstractMatch.Id, new OcrTextUpdate
+        {
+            OcrText = $"OCR context {token} on scanned page."
+        });
+        await _factory.TypesenseClient.UpdateDocument("publications", ocrOnlyMatch.Id, new OcrTextUpdate
         {
             OcrText = $"OCR-only context {token} on scanned page."
         });
@@ -78,11 +84,16 @@ public sealed class OcrSearchIntegrationTests
         var result = await _client.GetFromJsonAsync<RegularSearchResponse>(
             $"/api/search?q={token}");
 
-        var match = Assert.Single(result!.Items);
-        Assert.Equal(int.Parse(document.Id), match.Id);
-        Assert.True(match.IsOcrSnippet);
-        Assert.Contains("OCR-only context", match.AbstractSnippet);
-        Assert.Contains("<mark>", match.AbstractSnippet);
+        Assert.Equal(2, result!.Items.Count);
+        Assert.Equal(int.Parse(abstractMatch.Id), result.Items[0].Id);
+        Assert.True(result.Items[0].IsAbstractMatch);
+        Assert.Contains(token, result.Items[0].AbstractSnippet);
+        Assert.Contains("<mark>", result.Items[0].AbstractSnippet);
+        Assert.Contains("OCR context", result.Items[0].OcrSnippet);
+        Assert.Contains("<mark>", result.Items[0].OcrSnippet);
+        Assert.Equal(int.Parse(ocrOnlyMatch.Id), result.Items[1].Id);
+        Assert.False(result.Items[1].IsAbstractMatch);
+        Assert.Contains("OCR-only context", result.Items[1].OcrSnippet);
     }
 
     [Fact]

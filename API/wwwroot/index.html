@@ -243,10 +243,14 @@
               </template>
             </div>
 
-            <!-- Search snippet -->
-            <span x-show="pub.isOcrSnippet" class="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">OCR</span>
+            <!-- Abstract/body snippet, followed by OCR when it also matches -->
+            <span x-show="pub.isAbstractMatch" class="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Abstract</span>
             <p class="text-sm text-gray-500 mt-2 line-clamp-2"
                x-html="highlight(pub.abstractSnippet || pub.abstract || '')"></p>
+            <div x-show="pub.ocrSnippet" class="mt-2">
+              <span class="inline-block text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">OCR</span>
+              <p class="text-sm text-gray-500 mt-1 line-clamp-2" x-html="highlight(pub.ocrSnippet || '')"></p>
+            </div>
 
             <!-- Actions -->
             <div class="flex gap-2 mt-3">
