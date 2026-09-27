@@ -116,25 +116,26 @@ public sealed class SearchIndexReconciliationTests
     [Fact]
     public async Task MetadataUpdate_PreservesOcrFields()
     {
-        var document = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications")).First();
-        await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new Dictionary<string, object>
+        var id = await CreatePublicationAsync($"OCR preservation {Guid.NewGuid():N}");
+        using var scope = _factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<ITypesensePublicationIndexService>();
+        await service.SynchronizeFromSqlAsync();
+        await _factory.TypesenseClient.UpdateDocument("publications", id.ToString(), new Dictionary<string, object>
         {
             ["ocr_text"] = "preserved OCR markdown",
             ["ocr_status"] = "complete"
         });
-        using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbCntx>();
-        var publication = await db.Publications.FindAsync(int.Parse(document.Id));
+        var publication = await db.Publications.FindAsync(id);
         publication!.Title += " updated";
         publication.LastModified = DateTime.UtcNow;
         await db.SaveChangesAsync();
-        var service = scope.ServiceProvider.GetRequiredService<ITypesensePublicationIndexService>();
 
         var result = await service.SynchronizeFromSqlAsync();
 
         Assert.True(result.Success, result.ErrorMessage);
         var updated = await _factory.TypesenseClient.RetrieveDocument<PublicationDocument>(
-            "publications", document.Id);
+            "publications", id.ToString());
         Assert.Equal("preserved OCR markdown", updated.OcrText);
         Assert.Equal("complete", updated.OcrStatus);
     }

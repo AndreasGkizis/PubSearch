@@ -97,18 +97,18 @@ function createEntityCrud(cfg) {
   mixin[`openNew${M}`] = function () {
     this[`${S}Form`]      = { ...cfg.emptyForm };
     this[`${S}FormError`] = null;
-    this[`show${M}Modal`] = true;
+    this[`show${SP}Modal`] = true;
   };
 
   mixin[`openEdit${M}`] = function (item) {
     this[`${S}Form`]      = editFn(item);
     this[`${S}FormError`] = null;
-    this[`show${M}Modal`] = true;
+    this[`show${SP}Modal`] = true;
   };
 
   mixin[`save${M}`] = async function () {
     this[`${S}FormError`] = null;
-    this[`saving${M}`]    = true;
+    this[`saving${SP}`]    = true;
     const form    = this[`${S}Form`];
     const payload = cfg.toPayload(form);
     try {
@@ -118,34 +118,34 @@ function createEntityCrud(cfg) {
         await apiPost(cfg.apiBase, payload);
       }
       this.showToast(form.id ? `${cfg.entityName} updated.` : `${cfg.entityName} created.`);
-      this[`show${M}Modal`] = false;
+      this[`show${SP}Modal`] = false;
       this.loading = true;
       await this[`load${K}`]();
       this.loading = false;
     } catch (e) {
       this[`${S}FormError`] = e.message || 'Network error — please try again.';
     } finally {
-      this[`saving${M}`] = false;
+      this[`saving${SP}`] = false;
     }
   };
 
   mixin[`confirmDelete${M}`] = function (item) {
-    this[`delete${M}Target`] = item;
+    this[`delete${SP}Target`] = item;
   };
 
   mixin[`doDelete${M}`] = async function () {
-    const target = this[`delete${M}Target`];
+    const target = this[`delete${SP}Target`];
     if (!target) return;
-    this[`deleting${M}`] = true;
+    this[`deleting${SP}`] = true;
     try {
       await apiDelete(`${cfg.apiBase}/${target.id}`);
       this.showToast(`${cfg.entityName} deleted.`);
-      this[`delete${M}Target`] = null;
+      this[`delete${SP}Target`] = null;
       this.loading = true;
       await this[`load${K}`]();
       this.loading = false;
     } catch {} finally {
-      this[`deleting${M}`] = false;
+      this[`deleting${SP}`] = false;
     }
   };
 

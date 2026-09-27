@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using ResearchPublications.Application.Interfaces;
+using Typesense;
 using ResearchPublications.Infrastructure.Persistence;
 using ResearchPublications.Infrastructure.Settings;
 using DotNet.Testcontainers.Builders;
@@ -27,6 +30,7 @@ public class IntegrationCollection : ICollectionFixture<PubSearchApiFactory>;
 public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private const string DbPassword = "Test@Strong12345!";
+    private readonly string _pdfPath = Path.Combine(Path.GetTempPath(), $"pubsearch-tests-{Guid.NewGuid():N}");
 
     private readonly IContainer _dbContainer = new ContainerBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
@@ -46,7 +50,8 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
                 ["SqlSettings:DbName"]   = "master",
                 ["SqlSettings:UserId"]   = "sa",
                 ["SqlSettings:Password"] = DbPassword,
-                ["PdfStorage:Path"]      = Path.Combine(Path.GetTempPath(), $"pubsearch-tests-{Guid.NewGuid():N}"),
+                ["PdfStorage:Path"]      = _pdfPath,
+                ["SeedGeneratedCatalog"] = "false",
                 ["SearchIndexSync:Enabled"] = "false",
                 ["Ocr:Enabled"] = "false",
             });
@@ -83,6 +88,16 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
             if (ocrSettingsDescriptor is not null)
                 services.Remove(ocrSettingsDescriptor);
             services.AddSingleton(new OcrSettings { Enabled = false });
+
+            // CRUD tests use SQL only. Remove the development client entirely so
+            // accidental search calls cannot read or modify a development index.
+            services.RemoveAll<ITypesenseClient>();
+            services.RemoveAll<ISearchService>();
+            services.RemoveAll<IOcrSearchService>();
+            services.RemoveAll<ITypesensePublicationIndexService>();
+            services.RemoveAll<IOcrIndexingService>();
+            services.RemoveAll<IEntitySearchIndex>();
+            services.AddSingleton<IEntitySearchIndex, NoOpEntitySearchIndex>();
         });
 
         builder.UseEnvironment("Development");
@@ -118,4 +133,17 @@ public class PubSearchApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
 
         throw new TimeoutException("SQL Server did not become ready.", lastError);
     }
+}
+
+internal sealed class NoOpEntitySearchIndex : IEntitySearchIndex
+{
+    public Task<(IReadOnlyList<int> Ids, int TotalCount)> SearchAsync(
+        EntityIndexKind kind, string query, int page, int pageSize) =>
+        throw new NotSupportedException("Search tests must use SearchIndexApiFactory with isolated Typesense.");
+
+    public Task<bool> SynchronizeAsync(EntityIndexKind kind, CancellationToken cancellationToken = default) =>
+        Task.FromResult(true);
+
+    public Task<bool> SynchronizeAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(true);
 }

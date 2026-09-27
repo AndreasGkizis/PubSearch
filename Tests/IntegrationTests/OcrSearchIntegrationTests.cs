@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ResearchPublications.Application.DTOs;
 using ResearchPublications.Application.Interfaces;
 using ResearchPublications.Infrastructure.Search;
+using ResearchPublications.Infrastructure.Persistence;
 using ResearchPublications.IntegrationTests.Fixtures;
 using Typesense;
 using Xunit;
@@ -27,14 +28,17 @@ public sealed class OcrSearchIntegrationTests
     public async Task OcrSearch_UsesOnlyOcrText_WithPaginationAndHighlights()
     {
         var token = $"ocruniqueterm{Guid.NewGuid():N}";
-        var documents = await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications");
-        var selected = documents.Take(21).ToList();
+        var titleOnly = $"titleonly{Guid.NewGuid():N}";
+        var ids = new List<int>();
+        for (var i = 0; i < 21; i++)
+            ids.Add(await CreatePublicationAsync(i == 0 ? titleOnly : $"OCR pagination {token} {i}"));
+        await SynchronizeMetadataAsync();
 
-        foreach (var document in selected)
+        foreach (var id in ids)
         {
-            await _factory.TypesenseClient.UpdateDocument("publications", document.Id, new OcrTextUpdate
+            await _factory.TypesenseClient.UpdateDocument("publications", id.ToString(), new OcrTextUpdate
             {
-                OcrText = $"scanned context {token} page {document.Id}"
+                OcrText = $"scanned context {token} page {id}"
             });
         }
 
@@ -49,12 +53,6 @@ public sealed class OcrSearchIntegrationTests
         Assert.Single(secondPage!.Items);
         Assert.Equal(2, secondPage.Page);
 
-        var titleOnly = $"titleonly{Guid.NewGuid():N}";
-        await _factory.TypesenseClient.UpdateDocument("publications", selected[0].Id, new TitleUpdate
-        {
-            Title = titleOnly
-        });
-
         var titleOnlyResult = await _client.GetFromJsonAsync<OcrSearchResponse>(
             $"/api/ocr-search?q={titleOnly}");
         Assert.Equal(0, titleOnlyResult!.Total);
@@ -64,19 +62,15 @@ public sealed class OcrSearchIntegrationTests
     public async Task DefaultSearch_IncludesOcrMatchesAndPrefersOcrSnippet()
     {
         var token = $"defaultocr{Guid.NewGuid():N}";
-        var documents = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
-            .Take(2).ToList();
-        var abstractMatch = documents[0];
-        var ocrOnlyMatch = documents[1];
-        await _factory.TypesenseClient.UpdateDocument("publications", abstractMatch.Id, new AbstractUpdate
-        {
-            Abstract = $"Abstract also contains {token}."
-        });
-        await _factory.TypesenseClient.UpdateDocument("publications", abstractMatch.Id, new OcrTextUpdate
+        var abstractMatchId = await CreatePublicationAsync(
+            $"Abstract match {Guid.NewGuid():N}", abstractText: $"Abstract also contains {token}.");
+        var ocrOnlyMatchId = await CreatePublicationAsync($"OCR-only match {Guid.NewGuid():N}");
+        await SynchronizeMetadataAsync();
+        await _factory.TypesenseClient.UpdateDocument("publications", abstractMatchId.ToString(), new OcrTextUpdate
         {
             OcrText = $"OCR context {token} on scanned page."
         });
-        await _factory.TypesenseClient.UpdateDocument("publications", ocrOnlyMatch.Id, new OcrTextUpdate
+        await _factory.TypesenseClient.UpdateDocument("publications", ocrOnlyMatchId.ToString(), new OcrTextUpdate
         {
             OcrText = $"OCR-only context {token} on scanned page."
         });
@@ -85,13 +79,13 @@ public sealed class OcrSearchIntegrationTests
             $"/api/search?q={token}");
 
         Assert.Equal(2, result!.Items.Count);
-        Assert.Equal(int.Parse(abstractMatch.Id), result.Items[0].Id);
+        Assert.Equal(abstractMatchId, result.Items[0].Id);
         Assert.True(result.Items[0].IsAbstractMatch);
         Assert.Contains(token, result.Items[0].AbstractSnippet);
         Assert.Contains("<mark>", result.Items[0].AbstractSnippet);
         Assert.Contains("OCR context", result.Items[0].OcrSnippet);
         Assert.Contains("<mark>", result.Items[0].OcrSnippet);
-        Assert.Equal(int.Parse(ocrOnlyMatch.Id), result.Items[1].Id);
+        Assert.Equal(ocrOnlyMatchId, result.Items[1].Id);
         Assert.False(result.Items[1].IsAbstractMatch);
         Assert.Contains("OCR-only context", result.Items[1].OcrSnippet);
     }
@@ -119,10 +113,12 @@ public sealed class OcrSearchIntegrationTests
     public async Task ReplacingPdf_RemovesStaleOcrAndIndexesReplacement()
     {
         await ProcessOcrAsync();
-        var id = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
-            .First(document => !string.IsNullOrWhiteSpace(document.PdfFileName)).Id;
-        var original = await GetDocumentAsync(int.Parse(id));
-        await _factory.TypesenseClient.UpdateDocument("publications", id, new OcrTextUpdate
+        var id = await CreatePublicationAsync(
+            $"OCR replacement {Guid.NewGuid():N}", await UploadSeedPdfAsync());
+        await SynchronizeMetadataAsync();
+        await ProcessOcrAsync();
+        var original = await GetDocumentAsync(id);
+        await _factory.TypesenseClient.UpdateDocument("publications", id.ToString(), new OcrTextUpdate
         {
             OcrText = "staleocrmarker"
         });
@@ -139,7 +135,7 @@ public sealed class OcrSearchIntegrationTests
 
         await ProcessOcrAsync();
 
-        var replaced = await GetDocumentAsync(int.Parse(id));
+        var replaced = await GetDocumentAsync(id);
         Assert.DoesNotContain("staleocrmarker", replaced.OcrText);
         Assert.Contains("replacementocrmarker", replaced.OcrText);
         Assert.Equal(replacementFileName, replaced.OcrSourceFileName);
@@ -187,9 +183,7 @@ public sealed class OcrSearchIntegrationTests
 
     private async Task<string> UploadSeedPdfAsync(bool modifyContent = false)
     {
-        var document = (await _factory.TypesenseClient.ExportDocuments<PublicationDocument>("publications"))
-            .First(item => !string.IsNullOrWhiteSpace(item.PdfFileName));
-        var bytes = await _client.GetByteArrayAsync($"/api/publications/{document.Id}/download");
+        var bytes = SeedPdfGenerator.Generate(1).PdfBytes;
         if (modifyContent) bytes = [.. bytes, (byte)'\n'];
         using var form = new MultipartFormDataContent();
         using var file = new ByteArrayContent(bytes);
@@ -200,12 +194,13 @@ public sealed class OcrSearchIntegrationTests
         return (await response.Content.ReadFromJsonAsync<UploadResponse>())!.FileName;
     }
 
-    private async Task<int> CreatePublicationAsync(string title, string pdfFileName)
+    private async Task<int> CreatePublicationAsync(string title, string? pdfFileName = null, string? abstractText = null)
     {
         var response = await _client.PostAsJsonAsync("/api/publications", new PublicationDetailDto
         {
             Title = title,
             PdfFileName = pdfFileName,
+            Abstract = abstractText,
             Authors = [new AuthorDto { FirstName = "OCR", LastName = "Test" }]
         });
         response.EnsureSuccessStatusCode();
@@ -219,18 +214,6 @@ public sealed class OcrSearchIntegrationTests
     {
         [JsonPropertyName("ocr_text")]
         public string OcrText { get; init; } = string.Empty;
-    }
-
-    private sealed class TitleUpdate
-    {
-        [JsonPropertyName("title")]
-        public string Title { get; init; } = string.Empty;
-    }
-
-    private sealed class AbstractUpdate
-    {
-        [JsonPropertyName("abstract")]
-        public string Abstract { get; init; } = string.Empty;
     }
 
     private sealed record UploadResponse(string FileName);

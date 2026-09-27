@@ -60,6 +60,7 @@ public sealed class SearchIndexApiFactory : WebApplicationFactory<Program>, IAsy
                 ["SearchIndexSync:IntervalSeconds"] = "1",
                 ["PdfStorage:Path"] = _pdfPath,
                 ["Ocr:Enabled"] = "false",
+                ["SeedGeneratedCatalog"] = "false",
             });
         });
 
