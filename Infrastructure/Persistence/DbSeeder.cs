@@ -1,4 +1,5 @@
 using Bogus;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ResearchPublications.Domain.Entities;
@@ -6,7 +7,11 @@ using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence;
 
-public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSeeder> logger)
+public class DbSeeder(
+    AppDbCntx context,
+    IFileService fileService,
+    IConfiguration configuration,
+    ILogger<DbSeeder> logger)
 {
     private const int Seed = 12345;
     private const string UiFixtureKeyword = "UI Test Fixture";
@@ -269,7 +274,7 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
         {
             logger.LogInformation("Base seed skipped — data already exists.");
         }
-        else
+        else if (configuration.GetValue<bool>("SeedGeneratedCatalog"))
         {
             Randomizer.Seed = new Random(Seed);
 
@@ -291,6 +296,10 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
             logger.LogInformation(
                 "Seeded {Authors} authors, {Keywords} keywords, {Languages} languages, {PublicationTypes} publication types, {Publications} publications.",
                 authors.Count, keywords.Count, languages.Count, publicationTypes.Count, publications.Count);
+        }
+        else
+        {
+            logger.LogInformation("Generated catalog seed is disabled; seeding UI fixtures only.");
         }
 
         await SeedUiSearchFixturesAsync();
