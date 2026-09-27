@@ -1,29 +1,16 @@
+using ResearchPublications.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
-public class AuthorRepository(AppDbCntx context) : IAuthorRepository
+public class AuthorRepository(AppDbCntx context, IEntitySearchIndex index) : IAuthorRepository
 {
     public async Task<(IEnumerable<Author> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var baseQuery = context.Authors.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var q = search.ToLower();
-            baseQuery = baseQuery.Where(a =>
-                (a.FirstName + " " + (a.MiddleName ?? "") + " " + a.LastName).ToLower().Contains(q)
-                || (a.Email != null && a.Email.ToLower().Contains(q)));
-        }
-
-        var query = baseQuery.OrderBy(a => a.LastName).ThenBy(a => a.FirstName);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var query = context.Authors.AsNoTracking()
+            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName)
             .Select(a => new Author
             {
                 Id = a.Id,
@@ -34,10 +21,8 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
                 CreatedAt = a.CreatedAt,
                 LastModified = a.LastModified,
                 PublicationCount = a.Publications.Count
-            })
-            .ToListAsync();
-
-        return (items, total);
+            });
+        return await TypesenseEntityQuery.PageAsync(query, index, EntityIndexKind.Authors, search, page, pageSize);
     }
 
     public async Task<Author?> GetByIdAsync(int id) =>
@@ -61,6 +46,7 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
     {
         context.Authors.Add(author);
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Authors);
         return author.Id;
     }
 
@@ -76,6 +62,7 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
         existing.LastModified = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Authors);
     }
 
     public async Task DeleteAsync(int id)
@@ -87,6 +74,7 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
         {
             context.Authors.Remove(author);
             await context.SaveChangesAsync();
+            await index.SynchronizeAsync(EntityIndexKind.Authors);
         }
     }
 
@@ -104,22 +92,7 @@ public class AuthorRepository(AppDbCntx context) : IAuthorRepository
 
     public async Task<IEnumerable<Author>> SearchAsync(string query, int limit)
     {
-        var q = query.ToLower();
-        return await context.Authors
-            .AsNoTracking()
-            .Where(a => (a.FirstName + " " + (a.MiddleName ?? "") + " " + a.LastName).ToLower().Contains(q)
-                     || a.Email != null && a.Email.ToLower().Contains(q))
-            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName)
-            .Take(limit)
-            .Select(a => new Author
-            {
-                Id = a.Id,
-                FirstName = a.FirstName,
-                MiddleName = a.MiddleName,
-                LastName = a.LastName,
-                Email = a.Email,
-                PublicationCount = a.Publications.Count
-            })
-            .ToListAsync();
+        var (items, _) = await GetAllAsync(1, limit, query);
+        return items;
     }
 }

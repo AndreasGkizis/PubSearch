@@ -39,6 +39,8 @@ using (var scope = app.Services.CreateScope())
     await cacheService.RefreshLanguageFilterOptionsAsync();
     await cacheService.RefreshPublicationTypeFilterOptionsAsync();
 
+    await scope.ServiceProvider.GetRequiredService<IEntitySearchIndex>().SynchronizeAllAsync();
+
     var syncSettings = scope.ServiceProvider.GetRequiredService<ResearchPublications.Infrastructure.Settings.SearchIndexSyncSettings>();
     if (syncSettings.Enabled)
     {

@@ -1,27 +1,16 @@
+using ResearchPublications.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
-public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepository
+public class PublicationTypeRepository(AppDbCntx context, IEntitySearchIndex index) : IPublicationTypeRepository
 {
     public async Task<(IEnumerable<PublicationType> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var baseQuery = context.PublicationTypes.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var q = search.ToLower();
-            baseQuery = baseQuery.Where(pt => pt.Value.ToLower().Contains(q));
-        }
-
-        var query = baseQuery.OrderBy(pt => pt.Value);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var query = context.PublicationTypes.AsNoTracking()
+            .OrderBy(pt => pt.Value)
             .Select(pt => new PublicationType
             {
                 Id = pt.Id,
@@ -29,10 +18,8 @@ public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepo
                 CreatedAt = pt.CreatedAt,
                 LastModified = pt.LastModified,
                 PublicationCount = pt.Publications.Count
-            })
-            .ToListAsync();
-
-        return (items, total);
+            });
+        return await TypesenseEntityQuery.PageAsync(query, index, EntityIndexKind.PublicationTypes, search, page, pageSize);
     }
 
     public async Task<PublicationType?> GetByIdAsync(int id) =>
@@ -58,6 +45,7 @@ public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepo
     {
         context.PublicationTypes.Add(publicationType);
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.PublicationTypes);
         return publicationType.Id;
     }
 
@@ -70,6 +58,7 @@ public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepo
         existing.LastModified = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.PublicationTypes);
     }
 
     public async Task DeleteAsync(int id)
@@ -81,6 +70,7 @@ public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepo
         {
             context.PublicationTypes.Remove(publicationType);
             await context.SaveChangesAsync();
+            await index.SynchronizeAsync(EntityIndexKind.PublicationTypes);
         }
     }
 
@@ -95,17 +85,7 @@ public class PublicationTypeRepository(AppDbCntx context) : IPublicationTypeRepo
 
     public async Task<IEnumerable<PublicationType>> SearchAsync(string query, int limit)
     {
-        return await context.PublicationTypes
-            .AsNoTracking()
-            .Where(pt => pt.Value.ToLower().Contains(query.ToLower()))
-            .OrderBy(pt => pt.Value)
-            .Take(limit)
-            .Select(pt => new PublicationType
-            {
-                Id = pt.Id,
-                Value = pt.Value,
-                PublicationCount = pt.Publications.Count
-            })
-            .ToListAsync();
+        var (items, _) = await GetAllAsync(1, limit, query);
+        return items;
     }
 }

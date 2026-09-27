@@ -1,27 +1,16 @@
+using ResearchPublications.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
-public class KeywordRepository(AppDbCntx context) : IKeywordRepository
+public class KeywordRepository(AppDbCntx context, IEntitySearchIndex index) : IKeywordRepository
 {
     public async Task<(IEnumerable<Keyword> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var baseQuery = context.Keywords.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var q = search.ToLower();
-            baseQuery = baseQuery.Where(k => k.Value.ToLower().Contains(q));
-        }
-
-        var query = baseQuery.OrderBy(k => k.Value);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var query = context.Keywords.AsNoTracking()
+            .OrderBy(k => k.Value)
             .Select(k => new Keyword
             {
                 Id = k.Id,
@@ -29,10 +18,8 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
                 CreatedAt = k.CreatedAt,
                 LastModified = k.LastModified,
                 PublicationCount = k.Publications.Count
-            })
-            .ToListAsync();
-
-        return (items, total);
+            });
+        return await TypesenseEntityQuery.PageAsync(query, index, EntityIndexKind.Keywords, search, page, pageSize);
     }
 
     public async Task<Keyword?> GetByIdAsync(int id) =>
@@ -58,6 +45,7 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
     {
         context.Keywords.Add(keyword);
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Keywords);
         return keyword.Id;
     }
 
@@ -70,6 +58,7 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
         existing.LastModified = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Keywords);
     }
 
     public async Task DeleteAsync(int id)
@@ -81,6 +70,7 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
         {
             context.Keywords.Remove(keyword);
             await context.SaveChangesAsync();
+            await index.SynchronizeAsync(EntityIndexKind.Keywords);
         }
     }
 
@@ -95,17 +85,7 @@ public class KeywordRepository(AppDbCntx context) : IKeywordRepository
 
     public async Task<IEnumerable<Keyword>> SearchAsync(string query, int limit)
     {
-        return await context.Keywords
-            .AsNoTracking()
-            .Where(k => k.Value.ToLower().Contains(query.ToLower()))
-            .OrderBy(k => k.Value)
-            .Take(limit)
-            .Select(k => new Keyword
-            {
-                Id = k.Id,
-                Value = k.Value,
-                PublicationCount = k.Publications.Count
-            })
-            .ToListAsync();
+        var (items, _) = await GetAllAsync(1, limit, query);
+        return items;
     }
 }

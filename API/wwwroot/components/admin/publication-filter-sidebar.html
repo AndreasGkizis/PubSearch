@@ -27,7 +27,7 @@
         <span x-show="filterSelectedKeywords.length > 0" class="normal-case font-normal text-indigo-600"
           x-text="'(' + filterSelectedKeywords.length + ')'"></span>
       </span>
-      <input type="text" x-model="keywordFilterSearch" placeholder="Search keywords ..."
+      <input type="text" x-model="keywordFilterSearch" @input.debounce.300ms="onFilterSearch('keywords', keywordFilterSearch, '_filteredFilterKeywords')" placeholder="Search keywords ..."
         class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
         <template x-for="kw in filteredFilterKeywords" :key="kw.name">
@@ -48,7 +48,7 @@
         <span x-show="filterSelectedAuthors.length > 0" class="normal-case font-normal text-indigo-600"
           x-text="'(' + filterSelectedAuthors.length + ')'"></span>
       </span>
-      <input type="text" x-model="authorFilterSearch" placeholder="Search authors ..."
+      <input type="text" x-model="authorFilterSearch" @input.debounce.300ms="onFilterSearch('authors', authorFilterSearch, '_filteredFilterAuthors')" placeholder="Search authors ..."
         class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
         <template x-for="author in filteredFilterAuthors" :key="author.name">
@@ -69,7 +69,7 @@
         <span x-show="filterSelectedLanguages.length > 0" class="normal-case font-normal text-indigo-600"
           x-text="'(' + filterSelectedLanguages.length + ')'"></span>
       </span>
-      <input type="text" x-model="languageFilterSearch" placeholder="Search languages ..."
+      <input type="text" x-model="languageFilterSearch" @input.debounce.300ms="onFilterSearch('languages', languageFilterSearch, '_filteredFilterLanguages')" placeholder="Search languages ..."
         class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
         <template x-for="lang in filteredFilterLanguages" :key="lang.name">
@@ -90,7 +90,7 @@
         <span x-show="filterSelectedPublicationTypes.length > 0" class="normal-case font-normal text-indigo-600"
           x-text="'(' + filterSelectedPublicationTypes.length + ')'"></span>
       </span>
-      <input type="text" x-model="publicationTypeFilterSearch" placeholder="Search types ..."
+      <input type="text" x-model="publicationTypeFilterSearch" @input.debounce.300ms="onFilterSearch('publication_types', publicationTypeFilterSearch, '_filteredFilterPublicationTypes')" placeholder="Search types ..."
         class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       <div class="overflow-y-auto max-h-44 flex flex-col gap-0.5 pr-1">
         <template x-for="pt in filteredFilterPublicationTypes" :key="pt.name">

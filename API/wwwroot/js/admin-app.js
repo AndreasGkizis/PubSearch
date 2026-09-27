@@ -81,7 +81,6 @@ function adminApp() {
     query: '',
     lastQuery: '',
     isSearchMode: false,
-    fuzzyFilters: localStorage.getItem('fuzzyFilters') === 'true',
     filterYearFrom: '',
     filterYearTo: '',
     filterSelectedAuthors: [],
@@ -93,9 +92,13 @@ function adminApp() {
     availableLanguages: [],
     availablePublicationTypes: [],
     authorFilterSearch: '',
+    _filteredFilterAuthors: [],
     keywordFilterSearch: '',
+    _filteredFilterKeywords: [],
     languageFilterSearch: '',
+    _filteredFilterLanguages: [],
     publicationTypeFilterSearch: '',
+    _filteredFilterPublicationTypes: [],
 
     form: {
       id: null, title: '', year: null, doi: '', keywords: '', authorsText: '',
@@ -145,26 +148,22 @@ function adminApp() {
 
     get filteredFilterAuthors() {
       if (!this.authorFilterSearch) return this.availableAuthors;
-      const q = this.authorFilterSearch.toLowerCase();
-      return this.availableAuthors.filter((a) => a.name.toLowerCase().includes(q));
+      return this._filteredFilterAuthors;
     },
 
     get filteredFilterKeywords() {
       if (!this.keywordFilterSearch) return this.availableKeywords;
-      const q = this.keywordFilterSearch.toLowerCase();
-      return this.availableKeywords.filter((k) => k.name.toLowerCase().includes(q));
+      return this._filteredFilterKeywords;
     },
 
     get filteredFilterLanguages() {
       if (!this.languageFilterSearch) return this.availableLanguages;
-      const q = this.languageFilterSearch.toLowerCase();
-      return this.availableLanguages.filter((l) => l.name.toLowerCase().includes(q));
+      return this._filteredFilterLanguages;
     },
 
     get filteredFilterPublicationTypes() {
       if (!this.publicationTypeFilterSearch) return this.availablePublicationTypes;
-      const q = this.publicationTypeFilterSearch.toLowerCase();
-      return this.availablePublicationTypes.filter((pt) => pt.name.toLowerCase().includes(q));
+      return this._filteredFilterPublicationTypes;
     },
 
     // ── Lifecycle ───────────────────────────────────────────────
@@ -197,6 +196,15 @@ function adminApp() {
         this.availableLanguages        = opts.languages;
         this.availablePublicationTypes = opts.publicationTypes;
       } catch {}
+    },
+
+    async onFilterSearch(field, query, targetProp) {
+      if (!query.trim()) { this[targetProp] = []; return; }
+      try {
+        const params = new URLSearchParams({ field, q: query });
+        const data = await apiGet('/api/search/facets?' + params);
+        this[targetProp] = data.map(item => ({ name: item.name, count: item.count }));
+      } catch { this[targetProp] = []; }
     },
 
     _getFilters() {

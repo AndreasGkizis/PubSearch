@@ -27,6 +27,7 @@ internal sealed class SearchIndexSyncWorker(
             using var scope = scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<ITypesensePublicationIndexService>();
             await service.SynchronizeFromSqlAsync(stoppingToken);
+            await scope.ServiceProvider.GetRequiredService<IEntitySearchIndex>().SynchronizeAllAsync(stoppingToken);
         }
     }
 }

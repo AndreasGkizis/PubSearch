@@ -55,6 +55,7 @@ public static class DependencyResolver
         services.AddScoped<ISearchService, TypesenseSearchService>();
         services.AddScoped<IOcrSearchService, TypesenseOcrSearchService>();
         services.AddSingleton<SearchIndexSyncLock>();
+        services.AddScoped<IEntitySearchIndex, TypesenseEntitySearchIndex>();
         services.AddScoped<ITypesensePublicationIndexService, TypesensePublicationIndexService>();
         services.AddHostedService<SearchIndexSyncWorker>();
         services.AddSingleton(TimeProvider.System);

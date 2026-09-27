@@ -12,7 +12,8 @@ namespace ResearchPublications.API.Controllers;
 public class SearchController(
     ISearchService searchService,
     ITypesenseClient typesense,
-    ITypesensePublicationIndexService indexService) : ControllerBase
+    ITypesensePublicationIndexService indexService,
+    IEntitySearchIndex entityIndex) : ControllerBase
 {
     private const string CollectionName = "publications";
     private static readonly HashSet<string> ValidFacetFields = ["authors", "keywords", "languages", "publication_types"];
@@ -21,6 +22,8 @@ public class SearchController(
     public async Task<IActionResult> RebuildIndex(CancellationToken cancellationToken)
     {
         var result = await indexService.RebuildAsync(cancellationToken);
+        if (!await entityIndex.SynchronizeAllAsync(cancellationToken))
+            result = result with { Success = false, ErrorMessage = "Entity index synchronization failed. " + result.ErrorMessage };
         return result.Success ? Ok(result) : StatusCode(StatusCodes.Status503ServiceUnavailable, result);
     }
 

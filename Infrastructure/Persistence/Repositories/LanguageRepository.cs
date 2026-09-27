@@ -1,27 +1,16 @@
+using ResearchPublications.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ResearchPublications.Domain.Entities;
 using ResearchPublications.Domain.Interfaces;
 
 namespace ResearchPublications.Infrastructure.Persistence.Repositories;
 
-public class LanguageRepository(AppDbCntx context) : ILanguageRepository
+public class LanguageRepository(AppDbCntx context, IEntitySearchIndex index) : ILanguageRepository
 {
     public async Task<(IEnumerable<Language> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search = null)
     {
-        var baseQuery = context.Languages.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var q = search.ToLower();
-            baseQuery = baseQuery.Where(l => l.Value.ToLower().Contains(q));
-        }
-
-        var query = baseQuery.OrderBy(l => l.Value);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var query = context.Languages.AsNoTracking()
+            .OrderBy(l => l.Value)
             .Select(l => new Language
             {
                 Id = l.Id,
@@ -29,10 +18,8 @@ public class LanguageRepository(AppDbCntx context) : ILanguageRepository
                 CreatedAt = l.CreatedAt,
                 LastModified = l.LastModified,
                 PublicationCount = l.Publications.Count
-            })
-            .ToListAsync();
-
-        return (items, total);
+            });
+        return await TypesenseEntityQuery.PageAsync(query, index, EntityIndexKind.Languages, search, page, pageSize);
     }
 
     public async Task<Language?> GetByIdAsync(int id) =>
@@ -58,6 +45,7 @@ public class LanguageRepository(AppDbCntx context) : ILanguageRepository
     {
         context.Languages.Add(language);
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Languages);
         return language.Id;
     }
 
@@ -70,6 +58,7 @@ public class LanguageRepository(AppDbCntx context) : ILanguageRepository
         existing.LastModified = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
+        await index.SynchronizeAsync(EntityIndexKind.Languages);
     }
 
     public async Task DeleteAsync(int id)
@@ -81,6 +70,7 @@ public class LanguageRepository(AppDbCntx context) : ILanguageRepository
         {
             context.Languages.Remove(language);
             await context.SaveChangesAsync();
+            await index.SynchronizeAsync(EntityIndexKind.Languages);
         }
     }
 
@@ -95,17 +85,7 @@ public class LanguageRepository(AppDbCntx context) : ILanguageRepository
 
     public async Task<IEnumerable<Language>> SearchAsync(string query, int limit)
     {
-        return await context.Languages
-            .AsNoTracking()
-            .Where(l => l.Value.ToLower().Contains(query.ToLower()))
-            .OrderBy(l => l.Value)
-            .Take(limit)
-            .Select(l => new Language
-            {
-                Id = l.Id,
-                Value = l.Value,
-                PublicationCount = l.Publications.Count
-            })
-            .ToListAsync();
+        var (items, _) = await GetAllAsync(1, limit, query);
+        return items;
     }
 }

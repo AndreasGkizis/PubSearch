@@ -24,7 +24,6 @@ function searchApp() {
     _filteredKeywords: [],
     _filteredLanguages: [],
     _filteredPublicationTypes: [],
-    fuzzyFilters: localStorage.getItem('fuzzyFilters') === 'true',
     results: [],
     total: 0,
     page: 1,
@@ -52,30 +51,22 @@ function searchApp() {
 
     get filteredAuthors() {
       if (!this.authorSearch) return this.availableAuthors;
-      if (this.fuzzyFilters) return this._filteredAuthors;
-      const q = this.authorSearch.toLowerCase();
-      return this.availableAuthors.filter((a) => a.name.toLowerCase().includes(q));
+      return this._filteredAuthors;
     },
 
     get filteredKeywords() {
       if (!this.keywordSearch) return this.availableKeywords;
-      if (this.fuzzyFilters) return this._filteredKeywords;
-      const q = this.keywordSearch.toLowerCase();
-      return this.availableKeywords.filter((k) => k.name.toLowerCase().includes(q));
+      return this._filteredKeywords;
     },
 
     get filteredLanguages() {
       if (!this.languageSearch) return this.availableLanguages;
-      if (this.fuzzyFilters) return this._filteredLanguages;
-      const q = this.languageSearch.toLowerCase();
-      return this.availableLanguages.filter((l) => l.name.toLowerCase().includes(q));
+      return this._filteredLanguages;
     },
 
     get filteredPublicationTypes() {
       if (!this.publicationTypeSearch) return this.availablePublicationTypes;
-      if (this.fuzzyFilters) return this._filteredPublicationTypes;
-      const q = this.publicationTypeSearch.toLowerCase();
-      return this.availablePublicationTypes.filter((pt) => pt.name.toLowerCase().includes(q));
+      return this._filteredPublicationTypes;
     },
 
     // ── Lifecycle ───────────────────────────────────────────────
@@ -106,7 +97,7 @@ function searchApp() {
     },
 
     onFilterSearch(field, query, targetProp) {
-      if (this.fuzzyFilters && query.trim()) {
+      if (query.trim()) {
         this.facetSearch(field, query, targetProp);
       }
     },
