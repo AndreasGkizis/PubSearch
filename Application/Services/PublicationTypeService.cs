@@ -28,7 +28,7 @@ public class PublicationTypeService(IPublicationTypeRepository repository, Cache
 
         var entity = new PublicationType { Value = dto.Value };
         var id = await repository.CreateAsync(entity);
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidatePublicationTypeFilterOptions();
         return id;
     }
 
@@ -43,7 +43,7 @@ public class PublicationTypeService(IPublicationTypeRepository repository, Cache
 
         var entity = new PublicationType { Id = id, Value = dto.Value };
         await repository.UpdateAsync(entity);
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidatePublicationTypeFilterOptions();
     }
 
     public async Task DeleteAsync(int id)
@@ -51,7 +51,7 @@ public class PublicationTypeService(IPublicationTypeRepository repository, Cache
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Publication type {id} was not found.");
         await repository.DeleteAsync(id);
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidatePublicationTypeFilterOptions();
     }
 
     public async Task<IEnumerable<PublicationTypeManagementDto>> SearchAsync(string query, int limit)

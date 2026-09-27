@@ -28,7 +28,7 @@ public class LanguageService(ILanguageRepository repository, CacheService cacheS
 
         var entity = new Language { Value = dto.Value };
         var id = await repository.CreateAsync(entity);
-        await cacheService.RefreshLanguageFilterOptionsAsync();
+        cacheService.InvalidateLanguageFilterOptions();
         return id;
     }
 
@@ -43,7 +43,7 @@ public class LanguageService(ILanguageRepository repository, CacheService cacheS
 
         var entity = new Language { Id = id, Value = dto.Value };
         await repository.UpdateAsync(entity);
-        await cacheService.RefreshLanguageFilterOptionsAsync();
+        cacheService.InvalidateLanguageFilterOptions();
     }
 
     public async Task DeleteAsync(int id)
@@ -51,7 +51,7 @@ public class LanguageService(ILanguageRepository repository, CacheService cacheS
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Language {id} was not found.");
         await repository.DeleteAsync(id);
-        await cacheService.RefreshLanguageFilterOptionsAsync();
+        cacheService.InvalidateLanguageFilterOptions();
     }
 
     public async Task<IEnumerable<LanguageManagementDto>> SearchAsync(string query, int limit)

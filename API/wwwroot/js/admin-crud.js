@@ -121,6 +121,7 @@ function createEntityCrud(cfg) {
       this[`show${SP}Modal`] = false;
       this.loading = true;
       await this[`load${K}`]();
+      await this._loadFilterOptions();
       this.loading = false;
     } catch (e) {
       this[`${S}FormError`] = e.message || 'Network error — please try again.';
@@ -143,6 +144,7 @@ function createEntityCrud(cfg) {
       this[`delete${SP}Target`] = null;
       this.loading = true;
       await this[`load${K}`]();
+      await this._loadFilterOptions();
       this.loading = false;
     } catch {} finally {
       this[`deleting${SP}`] = false;

@@ -4,8 +4,8 @@
 ──────────────────────────────────────────────────────────────────── */
 
 /** GET JSON from `url`. Returns the parsed body. */
-async function apiGet(url) {
-  const res = await fetch(url);
+async function apiGet(url, options) {
+  const res = await fetch(url, options);
   if (!res.ok) throw new Error(`GET ${url}→ ${res.status}`);
   return res.json();
 }
@@ -50,18 +50,13 @@ async function apiDelete(url) {
  * publication types) in parallel.  Returns an object with those four arrays.
  */
 async function loadFilterOptions() {
-  const [authorsRes, keywordsRes, languagesRes, pubTypesRes] = await Promise.all([
-    fetch('/api/authors/filter-options'),
-    fetch('/api/keywords/filter-options'),
-    fetch('/api/languages/filter-options'),
-    fetch('/api/publication-types/filter-options'),
+  const [authors, keywords, languages, publicationTypes] = await Promise.all([
+    apiGet('/api/authors/filter-options', { cache: 'no-store' }),
+    apiGet('/api/keywords/filter-options', { cache: 'no-store' }),
+    apiGet('/api/languages/filter-options', { cache: 'no-store' }),
+    apiGet('/api/publication-types/filter-options', { cache: 'no-store' }),
   ]);
-  return {
-    authors: await authorsRes.json(),
-    keywords: await keywordsRes.json(),
-    languages: await languagesRes.json(),
-    publicationTypes: await pubTypesRes.json(),
-  };
+  return { authors, keywords, languages, publicationTypes };
 }
 
 /**

@@ -11,67 +11,33 @@ public class CacheService(IMemoryCache cache, IAuthorRepository authorRepository
     private const string LanguageFilterOptionsCacheKey = "filter-options:languages";
     private const string PublicationTypeFilterOptionsCacheKey = "filter-options:publication-types";
 
-    public async Task<IEnumerable<FilterOptionDto>> GetAuthorFilterOptionsAsync()
-    {
-        if (cache.TryGetValue(AuthorFilterOptionsCacheKey, out List<FilterOptionDto>? cached) && cached is not null)
-            return cached;
+    public Task<IEnumerable<FilterOptionDto>> GetAuthorFilterOptionsAsync() =>
+        GetFilterOptionsAsync(AuthorFilterOptionsCacheKey, authorRepository.GetFilterOptionsAsync);
 
-        return await RefreshAuthorFilterOptionsAsync();
+    public Task<IEnumerable<FilterOptionDto>> GetKeywordFilterOptionsAsync() =>
+        GetFilterOptionsAsync(KeywordFilterOptionsCacheKey, keywordRepository.GetFilterOptionsAsync);
+
+    public Task<IEnumerable<FilterOptionDto>> GetLanguageFilterOptionsAsync() =>
+        GetFilterOptionsAsync(LanguageFilterOptionsCacheKey, languageRepository.GetFilterOptionsAsync);
+
+    public Task<IEnumerable<FilterOptionDto>> GetPublicationTypeFilterOptionsAsync() =>
+        GetFilterOptionsAsync(PublicationTypeFilterOptionsCacheKey, publicationTypeRepository.GetFilterOptionsAsync);
+
+    public void InvalidateAuthorFilterOptions() => cache.Remove(AuthorFilterOptionsCacheKey);
+    public void InvalidateKeywordFilterOptions() => cache.Remove(KeywordFilterOptionsCacheKey);
+    public void InvalidateLanguageFilterOptions() => cache.Remove(LanguageFilterOptionsCacheKey);
+    public void InvalidatePublicationTypeFilterOptions() => cache.Remove(PublicationTypeFilterOptionsCacheKey);
+
+    public void InvalidateAllFilterOptions()
+    {
+        InvalidateAuthorFilterOptions();
+        InvalidateKeywordFilterOptions();
+        InvalidateLanguageFilterOptions();
+        InvalidatePublicationTypeFilterOptions();
     }
 
-    public async Task<IEnumerable<FilterOptionDto>> GetKeywordFilterOptionsAsync()
-    {
-        if (cache.TryGetValue(KeywordFilterOptionsCacheKey, out List<FilterOptionDto>? cached) && cached is not null)
-            return cached;
-
-        return await RefreshKeywordFilterOptionsAsync();
-    }
-
-    public async Task<List<FilterOptionDto>> RefreshAuthorFilterOptionsAsync()
-    {
-        var items = await authorRepository.GetFilterOptionsAsync();
-        var result = items.Select(x => new FilterOptionDto(x.Name, x.Count)).ToList();
-        cache.Set(AuthorFilterOptionsCacheKey, result);
-        return result;
-    }
-
-    public async Task<List<FilterOptionDto>> RefreshKeywordFilterOptionsAsync()
-    {
-        var items = await keywordRepository.GetFilterOptionsAsync();
-        var result = items.Select(x => new FilterOptionDto(x.Name, x.Count)).ToList();
-        cache.Set(KeywordFilterOptionsCacheKey, result);
-        return result;
-    }
-
-    public async Task<IEnumerable<FilterOptionDto>> GetLanguageFilterOptionsAsync()
-    {
-        if (cache.TryGetValue(LanguageFilterOptionsCacheKey, out List<FilterOptionDto>? cached) && cached is not null)
-            return cached;
-
-        return await RefreshLanguageFilterOptionsAsync();
-    }
-
-    public async Task<IEnumerable<FilterOptionDto>> GetPublicationTypeFilterOptionsAsync()
-    {
-        if (cache.TryGetValue(PublicationTypeFilterOptionsCacheKey, out List<FilterOptionDto>? cached) && cached is not null)
-            return cached;
-
-        return await RefreshPublicationTypeFilterOptionsAsync();
-    }
-
-    public async Task<List<FilterOptionDto>> RefreshLanguageFilterOptionsAsync()
-    {
-        var items = await languageRepository.GetFilterOptionsAsync();
-        var result = items.Select(x => new FilterOptionDto(x.Name, x.Count)).ToList();
-        cache.Set(LanguageFilterOptionsCacheKey, result);
-        return result;
-    }
-
-    public async Task<List<FilterOptionDto>> RefreshPublicationTypeFilterOptionsAsync()
-    {
-        var items = await publicationTypeRepository.GetFilterOptionsAsync();
-        var result = items.Select(x => new FilterOptionDto(x.Name, x.Count)).ToList();
-        cache.Set(PublicationTypeFilterOptionsCacheKey, result);
-        return result;
-    }
+    private async Task<IEnumerable<FilterOptionDto>> GetFilterOptionsAsync(
+        string key, Func<Task<IEnumerable<(string Name, int Count)>>> load) =>
+        await cache.GetOrCreateAsync(key, async _ =>
+            (await load()).Select(item => new FilterOptionDto(item.Name, item.Count)).ToList()) ?? [];
 }

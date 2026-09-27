@@ -195,6 +195,12 @@ function adminApp() {
         this.availableKeywords         = opts.keywords;
         this.availableLanguages        = opts.languages;
         this.availablePublicationTypes = opts.publicationTypes;
+        await Promise.all([
+          this.onFilterSearch('authors', this.authorFilterSearch, '_filteredFilterAuthors'),
+          this.onFilterSearch('keywords', this.keywordFilterSearch, '_filteredFilterKeywords'),
+          this.onFilterSearch('languages', this.languageFilterSearch, '_filteredFilterLanguages'),
+          this.onFilterSearch('publication_types', this.publicationTypeFilterSearch, '_filteredFilterPublicationTypes'),
+        ]);
       } catch {}
     },
 
@@ -518,6 +524,7 @@ function adminApp() {
           lastName: payload.lastName, email: payload.email, publicationCount: 0,
         });
         this.inlineAuthor = { firstName: '', middleName: '', lastName: '', email: '' };
+        await this._loadFilterOptions();
         this.showInlineAuthorForm = false;
         this.authorSearch = '';  this.authorSearchResults = [];  this.authorDropdownOpen = false;
       } catch (e) {
@@ -536,6 +543,7 @@ function adminApp() {
         const data = await apiPost(apiBase, { value });
         this[selectedProp].push({ id: data.id, value, publicationCount: 0 });
         resetFn();
+        await this._loadFilterOptions();
       } catch (e) {
         if (e.status === 500) {
           // Might already exist — try to find it
@@ -580,6 +588,7 @@ function adminApp() {
         if (!res.ok) { const err = await res.json().catch(() => ({})); this.formError = err?.detail || 'Save failed.'; return; }
         this.showToast(this.form.id ? 'Publication updated.' : 'Publication created.');
         this.closeModal();
+        await this._loadFilterOptions();
         if (this.isSearchMode) { await this.searchPublications(); } else { await this.loadAll(); }
       } catch {
         this.formError = 'Network error — please try again.';
@@ -596,6 +605,7 @@ function adminApp() {
         await apiDelete(`/api/publications/${this.deleteTarget.id}`);
         this.showToast('Publication deleted.');
         this.deleteTarget = null;
+        await this._loadFilterOptions();
         if (this.isSearchMode) { await this.searchPublications(); } else { await this.loadAll(); }
       } catch {} finally { this.deleting = false; }
     },

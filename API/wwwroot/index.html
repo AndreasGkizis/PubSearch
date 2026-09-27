@@ -21,7 +21,7 @@
   <script src="js/search-app.js?v=always-fuzzy-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen" x-data="searchApp()" x-init="init()">
+<body class="bg-gray-50 min-h-screen" x-data="searchApp()" x-init="init()" @focus.window="_loadFilterOptions()">
 
   <header class="bg-white shadow-sm sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">

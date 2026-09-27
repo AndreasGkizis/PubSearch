@@ -31,10 +31,7 @@ public class PublicationService(IPublicationRepository repository, CacheService 
     {
         var entity = FromDetail(dto);
         var id = await repository.CreateAsync(entity);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
-        await cacheService.RefreshKeywordFilterOptionsAsync();
-        await cacheService.RefreshLanguageFilterOptionsAsync();
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidateAllFilterOptions();
 
         return id;
     }
@@ -46,10 +43,7 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         var entity = FromDetail(dto);
         entity.Id = id;
         await repository.UpdateAsync(entity);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
-        await cacheService.RefreshKeywordFilterOptionsAsync();
-        await cacheService.RefreshLanguageFilterOptionsAsync();
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidateAllFilterOptions();
 
     }
 
@@ -58,10 +52,7 @@ public class PublicationService(IPublicationRepository repository, CacheService 
         _ = await repository.GetByIdAsync(id)
             ?? throw new Exceptions.NotFoundException($"Publication {id} was not found.");
         await repository.DeleteAsync(id);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
-        await cacheService.RefreshKeywordFilterOptionsAsync();
-        await cacheService.RefreshLanguageFilterOptionsAsync();
-        await cacheService.RefreshPublicationTypeFilterOptionsAsync();
+        cacheService.InvalidateAllFilterOptions();
     }
 
     // ── Mapping helpers ────────────────────────────────────────────────────

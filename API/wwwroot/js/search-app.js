@@ -83,6 +83,12 @@ function searchApp() {
         this.availableKeywords         = opts.keywords;
         this.availableLanguages        = opts.languages;
         this.availablePublicationTypes = opts.publicationTypes;
+        await Promise.all([
+          this.onFilterSearch('authors', this.authorSearch, '_filteredAuthors'),
+          this.onFilterSearch('keywords', this.keywordSearch, '_filteredKeywords'),
+          this.onFilterSearch('languages', this.languageSearch, '_filteredLanguages'),
+          this.onFilterSearch('publication_types', this.publicationTypeSearch, '_filteredPublicationTypes'),
+        ]);
       } catch {}
     },
 
@@ -98,7 +104,7 @@ function searchApp() {
 
     onFilterSearch(field, query, targetProp) {
       if (query.trim()) {
-        this.facetSearch(field, query, targetProp);
+        return this.facetSearch(field, query, targetProp);
       }
     },
 

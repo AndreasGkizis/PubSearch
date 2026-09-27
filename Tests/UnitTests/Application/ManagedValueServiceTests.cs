@@ -50,6 +50,10 @@ public sealed class ManagedValueServiceTests
         context.PublicationTypes.GetByIdAsync(3).Returns(new PublicationType { Id = 3, Value = "Article" });
         context.PublicationTypes.GetByValueAsync("Article").Returns(new PublicationType { Id = 3, Value = "Article" });
         var service = new PublicationTypeService(context.PublicationTypes, context.CacheService);
+        await context.CacheService.GetPublicationTypeFilterOptionsAsync();
+        context.PublicationTypes.ClearReceivedCalls();
+        context.PublicationTypes.GetFilterOptionsAsync().Returns(
+            Task.FromResult<IEnumerable<(string Name, int Count)>>([("Article", 2)]));
 
         // Act
         await service.UpdateAsync(3, new PublicationTypeManagementDto { Value = "Article" });
@@ -57,6 +61,9 @@ public sealed class ManagedValueServiceTests
         // Assert
         await context.PublicationTypes.Received(1).UpdateAsync(
             Arg.Is<PublicationType>(item => item.Id == 3 && item.Value == "Article"));
+        await context.PublicationTypes.DidNotReceive().GetFilterOptionsAsync();
+        var options = await context.CacheService.GetPublicationTypeFilterOptionsAsync();
+        Assert.Equal(2, Assert.Single(options).Count);
         await context.PublicationTypes.Received(1).GetFilterOptionsAsync();
     }
 }

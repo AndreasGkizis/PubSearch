@@ -10,7 +10,7 @@ public class KeywordsController(KeywordService keywordService, CacheService cach
 {
     // GET /api/keywords/filter-options
     [HttpGet("filter-options")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetFilterOptions()
     {
         var options = await cacheService.GetKeywordFilterOptionsAsync();

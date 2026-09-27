@@ -11,7 +11,7 @@ namespace ResearchPublications.UnitTests.Application;
 public sealed class PublicationServiceTests
 {
     [Fact]
-    public async Task Create_CommaSeparatedRelationships_MapsCleanValuesAndRefreshesFilters()
+    public async Task Create_CommaSeparatedRelationships_MapsCleanValuesWithoutQueryingFilters()
     {
         // Arrange
         using var context = new ServiceTestContext();
@@ -39,10 +39,10 @@ public sealed class PublicationServiceTests
         Assert.Equal(["Article", "Thesis"], savedPublication.PublicationTypes.Select(item => item.Value));
         Assert.Equal("Anna", savedPublication.Authors.Single().FirstName);
         Assert.Equal("M.", savedPublication.Authors.Single().MiddleName);
-        await context.Authors.Received(1).GetFilterOptionsAsync();
-        await context.Keywords.Received(1).GetFilterOptionsAsync();
-        await context.Languages.Received(1).GetFilterOptionsAsync();
-        await context.PublicationTypes.Received(1).GetFilterOptionsAsync();
+        await context.Authors.DidNotReceive().GetFilterOptionsAsync();
+        await context.Keywords.DidNotReceive().GetFilterOptionsAsync();
+        await context.Languages.DidNotReceive().GetFilterOptionsAsync();
+        await context.PublicationTypes.DidNotReceive().GetFilterOptionsAsync();
     }
 
     [Fact]

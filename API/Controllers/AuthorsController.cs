@@ -10,7 +10,7 @@ public class AuthorsController(AuthorService authorService, CacheService cacheSe
 {
     // GET /api/authors/filter-options
     [HttpGet("filter-options")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetFilterOptions()
     {
         var options = await cacheService.GetAuthorFilterOptionsAsync();

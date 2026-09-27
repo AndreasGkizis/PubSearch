@@ -32,13 +32,6 @@ using (var scope = app.Services.CreateScope())
     var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
     await seeder.SeedAsync();
 
-    // Preload filter-option caches
-    var cacheService = scope.ServiceProvider.GetRequiredService<CacheService>();
-    await cacheService.RefreshAuthorFilterOptionsAsync();
-    await cacheService.RefreshKeywordFilterOptionsAsync();
-    await cacheService.RefreshLanguageFilterOptionsAsync();
-    await cacheService.RefreshPublicationTypeFilterOptionsAsync();
-
     await scope.ServiceProvider.GetRequiredService<IEntitySearchIndex>().SynchronizeAllAsync();
 
     var syncSettings = scope.ServiceProvider.GetRequiredService<ResearchPublications.Infrastructure.Settings.SearchIndexSyncSettings>();

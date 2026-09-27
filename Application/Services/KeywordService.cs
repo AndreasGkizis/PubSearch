@@ -28,7 +28,7 @@ public class KeywordService(IKeywordRepository repository, CacheService cacheSer
 
         var entity = new Keyword { Value = dto.Value };
         var id = await repository.CreateAsync(entity);
-        await cacheService.RefreshKeywordFilterOptionsAsync();
+        cacheService.InvalidateKeywordFilterOptions();
         return id;
     }
 
@@ -43,7 +43,7 @@ public class KeywordService(IKeywordRepository repository, CacheService cacheSer
 
         var entity = new Keyword { Id = id, Value = dto.Value };
         await repository.UpdateAsync(entity);
-        await cacheService.RefreshKeywordFilterOptionsAsync();
+        cacheService.InvalidateKeywordFilterOptions();
     }
 
     public async Task DeleteAsync(int id)
@@ -51,7 +51,7 @@ public class KeywordService(IKeywordRepository repository, CacheService cacheSer
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Keyword {id} was not found.");
         await repository.DeleteAsync(id);
-        await cacheService.RefreshKeywordFilterOptionsAsync();
+        cacheService.InvalidateKeywordFilterOptions();
     }
 
     public async Task<IEnumerable<KeywordManagementDto>> SearchAsync(string query, int limit)

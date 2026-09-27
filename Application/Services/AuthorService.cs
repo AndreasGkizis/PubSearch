@@ -24,7 +24,7 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
     {
         var entity = FromDto(dto);
         var id = await repository.CreateAsync(entity);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
+        cacheService.InvalidateAuthorFilterOptions();
         return id;
     }
 
@@ -36,7 +36,7 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
         var entity = FromDto(dto);
         entity.Id = id;
         await repository.UpdateAsync(entity);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
+        cacheService.InvalidateAuthorFilterOptions();
     }
 
     public async Task DeleteAsync(int id)
@@ -44,7 +44,7 @@ public class AuthorService(IAuthorRepository repository, CacheService cacheServi
         _ = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Author {id} was not found.");
         await repository.DeleteAsync(id);
-        await cacheService.RefreshAuthorFilterOptionsAsync();
+        cacheService.InvalidateAuthorFilterOptions();
     }
 
     public async Task<IEnumerable<AuthorManagementDto>> SearchAsync(string query, int limit)

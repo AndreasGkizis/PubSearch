@@ -10,7 +10,7 @@ public class LanguagesController(LanguageService languageService, CacheService c
 {
     // GET /api/languages/filter-options
     [HttpGet("filter-options")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetFilterOptions()
     {
         var options = await cacheService.GetLanguageFilterOptionsAsync();
