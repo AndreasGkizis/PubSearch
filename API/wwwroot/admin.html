@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin &ndash; Research Publications</title>
-  <script src="js/shared.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="markdown.css?v=3" />
+  <script src="js/shared.js?v=ocr-markdown-2"></script>
   <script>initTheme();</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
@@ -277,9 +280,9 @@
               <span x-show="pub.isAbstractMatch" class="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Abstract</span>
               <p class="text-sm text-gray-500 mt-2 line-clamp-2"
                  x-html="highlight(pub.abstractSnippet || pub.abstract || '')"></p>
-              <div x-show="pub.ocrSnippet" class="mt-2">
-                <span class="inline-block text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">OCR</span>
-                <p class="text-sm text-gray-500 mt-1 line-clamp-2" x-html="highlight(pub.ocrSnippet || '')"></p>
+              <div x-show="pub.ocrSnippet" class="pdf-excerpt mt-3">
+                <span class="inline-block text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">ext from PDF's OCR</span>
+                <div class="ocr-markdown text-sm text-gray-500 mt-1" x-html="renderOcrMarkdown(pub.ocrSnippet || '')"></div>
               </div>
 
               <!-- Actions -->

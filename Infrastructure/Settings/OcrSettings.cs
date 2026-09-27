@@ -10,5 +10,5 @@ public sealed class OcrSettings
     public int IntervalSeconds { get; set; } = 5;
     public int RetrySeconds { get; set; } = 300;
 
-    public string PipelineVersion => $"{Model}|pdf-to-image-5.4.0|dpi-{Dpi}|{Prompt}";
+    public string PipelineVersion => $"{Model}|pdf-to-image-5.4.0|dpi-{Dpi}|{Ocr.OcrMarkdownConverter.Version}|{Prompt}";
 }

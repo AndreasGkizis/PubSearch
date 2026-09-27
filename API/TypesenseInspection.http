@@ -1,7 +1,7 @@
 @TypesenseBaseUrl = http://localhost:8108
 @TypesenseApiKey = devkey123
 @Collection = publications
-@DocumentId = 1
+@DocumentId = 29
 @OcrQuery = coronllyjade
 
 ### List collections and document counts

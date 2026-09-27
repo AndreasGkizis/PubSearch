@@ -18,7 +18,8 @@ internal sealed class OcrPdfProcessor(
             pdfStream, settings.Dpi, cancellationToken))
         {
             pageStarted?.Invoke(pages.Count + 1);
-            pages.Add(await ollama.ExtractMarkdownAsync(pngBytes, cancellationToken));
+            var output = await ollama.ExtractMarkdownAsync(pngBytes, cancellationToken);
+            pages.Add(OcrMarkdownConverter.ToMarkdown(output));
         }
 
         if (pages.Count == 0)

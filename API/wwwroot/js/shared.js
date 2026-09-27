@@ -86,3 +86,20 @@ function splitCsv(val) {
   if (!val) return [];
   return val.split(',').map((s) => s.trim()).filter(Boolean);
 }
+
+/** Render OCR Markdown while preserving Typesense highlights. */
+function renderOcrMarkdown(text) {
+  if (!text) return '';
+  const markdown = text.trim().replace(
+    /^(`{3,}|~{3,})(?:markdown|md)?[ \t]*\r?\n([\s\S]*?)\r?\n\1[ \t]*$/i,
+    '$2',
+  );
+  if (!window.marked || !window.DOMPurify) return renderMarks(markdown);
+  const html = marked.parse(markdown, { async: false });
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'strong', 'em', 'del', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'mark', 'a'],
+    ALLOWED_ATTR: ['href', 'title', 'start', 'colspan', 'rowspan'],
+  });
+}

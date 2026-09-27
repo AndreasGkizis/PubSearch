@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OCR Search</title>
-  <script src="js/shared.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="markdown.css?v=3" />
+  <script src="js/shared.js?v=ocr-markdown-2"></script>
   <script>initTheme();</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
@@ -60,8 +63,11 @@
             </div>
             <span class="text-xs text-gray-400" x-text="publication.year || ''"></span>
           </div>
-          <p class="mt-3 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
-            x-html="renderMarks(publication.ocrSnippet)"></p>
+          <div class="pdf-excerpt mt-3">
+            <span class="inline-block text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Text from PDF's OCR</span>
+            <div class="ocr-markdown mt-1 text-sm text-gray-700 leading-relaxed"
+              x-html="renderOcrMarkdown(publication.ocrSnippet)"></div>
+          </div>
           <div class="mt-4 flex gap-3 text-sm">
             <a :href="'/publication.html?id=' + publication.id" class="text-indigo-600 hover:underline">View</a>
             <a x-show="publication.pdfFileName" :href="'/api/publications/' + publication.id + '/download'"
