@@ -49,8 +49,9 @@ dotnet run --project API
 
 On startup the application will automatically:
 - Apply EF Core migrations to create/update the database schema
-- Seed the database with **150 publications**, **50 authors**, **100 keywords**, **6 languages**, and **5 publication types** (via [Bogus](https://github.com/bchavez/Bogus) with a fixed seed — skipped if data already exists)
-- Create one scanned-style, image-only PDF for every seeded publication. Each page contains deterministic mosaic-conservation prose and a unique `mosaicscan0001`-style OCR marker; `Publication.Body` remains empty.
+- Seed the database with **150 generated publications** plus **10 focused UI search fixtures**. The generated corpus uses [Bogus](https://github.com/bchavez/Bogus) with a fixed seed; UI fixtures are added idempotently even when publication data already exists.
+- Create one scanned-style, image-only PDF for every generated publication. Each page contains deterministic mosaic-conservation prose and a unique `mosaicscan0001`-style OCR marker; `Publication.Body` remains empty.
+- The focused UI fixtures cover abstract-only, body-only, OCR-only, abstract+OCR, abstract-vs-OCR ranking, title-only, keyword-only, author-only, and filtered searches. Three fixtures have scanned PDFs for OCR tests.
 - Create the PDF storage directory if configured
 
 Then open [https://localhost:5001](https://localhost:5001) (or the port shown in console output).

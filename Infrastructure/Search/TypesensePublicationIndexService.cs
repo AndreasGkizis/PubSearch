@@ -82,6 +82,7 @@ internal sealed class TypesensePublicationIndexService(
 
         var publications = await context.Publications
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .Include(p => p.Languages)
@@ -152,9 +153,12 @@ internal sealed class TypesensePublicationIndexService(
             return new(false, added, updated, deleted, unchanged, message);
         }
 
-        logger.LogInformation(
-            "Typesense synchronization from SQL complete: {Added} added, {Updated} updated, {Deleted} deleted, {Unchanged} unchanged.",
-            added, updated, deleted, unchanged);
+        if (added > 0 || updated > 0 || deleted > 0)
+        {
+            logger.LogInformation(
+                "Typesense synchronization from SQL changed the index: {Added} added, {Updated} updated, {Deleted} deleted, {Unchanged} unchanged.",
+                added, updated, deleted, unchanged);
+        }
         return new(true, added, updated, deleted, unchanged);
     }
 

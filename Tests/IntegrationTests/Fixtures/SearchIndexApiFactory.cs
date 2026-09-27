@@ -195,10 +195,14 @@ internal sealed class FakeOcrPdfProcessor : IOcrPdfProcessor
 
     public void FailNext(string message) => _responses.Enqueue(() => throw new InvalidOperationException(message));
 
-    public Task<string> ProcessAsync(Stream pdfStream, CancellationToken cancellationToken = default)
+    public Task<string> ProcessAsync(
+        Stream pdfStream,
+        CancellationToken cancellationToken = default,
+        Action<int>? pageStarted = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         CallCount++;
+        pageStarted?.Invoke(1);
         var result = _responses.Count > 0 ? _responses.Dequeue()() : $"baseline OCR {CallCount}";
         return Task.FromResult(result);
     }

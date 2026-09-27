@@ -122,7 +122,23 @@ internal sealed class TypesenseOcrIndexingService(
         try
         {
             await using var pdf = new MemoryStream(pdfBytes, writable: false);
-            var markdown = await processor.ProcessAsync(pdf, cancellationToken);
+            logger.LogInformation(
+                "OCR started for publication {PublicationId} ({FileName}).",
+                document.Id,
+                fileName);
+            var pageCount = 0;
+            var markdown = await processor.ProcessAsync(
+                pdf,
+                cancellationToken,
+                pageNumber =>
+                {
+                    pageCount = pageNumber;
+                    logger.LogInformation(
+                        "OCR publication {PublicationId} ({FileName}), page {PageNumber} started.",
+                        document.Id,
+                        fileName,
+                        pageNumber);
+                });
             await UpdateAsync(document.Id, new OcrDocumentUpdate
             {
                 OcrText = markdown,
@@ -133,6 +149,11 @@ internal sealed class TypesenseOcrIndexingService(
                 OcrError = string.Empty,
                 OcrRetryAfterTimestamp = 0
             });
+            logger.LogInformation(
+                "OCR completed for publication {PublicationId} ({FileName}): {PageCount} pages.",
+                document.Id,
+                fileName,
+                pageCount);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

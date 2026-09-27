@@ -7,13 +7,17 @@ internal sealed class OcrPdfProcessor(
     IOllamaOcrClient ollama,
     OcrSettings settings) : IOcrPdfProcessor
 {
-    public async Task<string> ProcessAsync(Stream pdfStream, CancellationToken cancellationToken = default)
+    public async Task<string> ProcessAsync(
+        Stream pdfStream,
+        CancellationToken cancellationToken = default,
+        Action<int>? pageStarted = null)
     {
         var pages = new List<string>();
 
         await foreach (var pngBytes in pageRenderer.RenderPngPagesAsync(
             pdfStream, settings.Dpi, cancellationToken))
         {
+            pageStarted?.Invoke(pages.Count + 1);
             pages.Add(await ollama.ExtractMarkdownAsync(pngBytes, cancellationToken));
         }
 

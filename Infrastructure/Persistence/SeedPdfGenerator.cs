@@ -32,7 +32,12 @@ internal static class SeedPdfGenerator
 
     internal static SeedPdf Generate(int publicationNumber)
     {
-        var body = GenerateBody(publicationNumber);
+        return Generate(GenerateBody(publicationNumber));
+    }
+
+    internal static SeedPdf Generate(string body)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(body);
         return new SeedPdf(body, RenderImageOnlyPdf(body));
     }
 

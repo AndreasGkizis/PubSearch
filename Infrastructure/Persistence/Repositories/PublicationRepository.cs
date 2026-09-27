@@ -9,6 +9,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
     public async Task<Publication?> GetByIdAsync(int id) =>
         await context.Publications
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .Include(p => p.Languages)
@@ -49,6 +50,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
         var total = await query.CountAsync();
 
         var projected = await query
+            .AsSplitQuery()
             .OrderByDescending(p => p.LastModified)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -143,6 +145,7 @@ public class PublicationRepository(AppDbCntx context) : IPublicationRepository
     public async Task UpdateAsync(Publication publication)
     {
         var existing = await context.Publications
+            .AsSplitQuery()
             .Include(p => p.Authors)
             .Include(p => p.Keywords)
             .Include(p => p.Languages)

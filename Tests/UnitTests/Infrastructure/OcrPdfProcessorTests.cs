@@ -12,11 +12,15 @@ public sealed class OcrPdfProcessorTests
         var renderer = new FakeRenderer(["page-1"u8.ToArray(), "page-2"u8.ToArray()]);
         var ollama = new FakeOllama();
         var processor = new OcrPdfProcessor(renderer, ollama, new OcrSettings { Dpi = 200 });
+        var startedPages = new List<int>();
 
-        var markdown = await processor.ProcessAsync(new MemoryStream("pdf"u8.ToArray()));
+        var markdown = await processor.ProcessAsync(
+            new MemoryStream("pdf"u8.ToArray()),
+            pageStarted: startedPages.Add);
 
         Assert.Equal("markdown-page-1\n\nmarkdown-page-2", markdown);
         Assert.Equal(["page-1", "page-2"], ollama.Requests);
+        Assert.Equal([1, 2], startedPages);
         Assert.Equal(200, renderer.ReceivedDpi);
     }
 

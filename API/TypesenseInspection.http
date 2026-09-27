@@ -2,7 +2,7 @@
 @TypesenseApiKey = devkey123
 @Collection = publications
 @DocumentId = 1
-@OcrQuery = mosaicscan0001
+@OcrQuery = coronllyjade
 
 ### List collections and document counts
 GET {{TypesenseBaseUrl}}/collections

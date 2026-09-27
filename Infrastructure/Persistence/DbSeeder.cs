@@ -9,6 +9,8 @@ namespace ResearchPublications.Infrastructure.Persistence;
 public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSeeder> logger)
 {
     private const int Seed = 12345;
+    private const string UiFixtureKeyword = "UI Test Fixture";
+    private const string UiFixtureTitlePrefix = "UI Fixture ";
 
     private static readonly DateTime FixedTimestamp =
         new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -220,34 +222,196 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
         "The authors advocate for the establishment of an international mosaic conservation database to facilitate knowledge sharing and comparative analysis across sites and regions."
     ];
 
+    private static readonly UiSearchFixture[] UiSearchFixtures =
+    [
+        new("UI Fixture 01 - Abstract Only",
+            "The abstract contains the unique abstractonlyamber marker. The body and PDF deliberately do not.",
+            null, null, 2021, "English", "Journal"),
+        new("UI Fixture 02 - Body Only",
+            "A control abstract about conservation documentation without the distinctive body marker.",
+            "The body contains the unique bodyonlycobalt marker for full-text search.",
+            null, 2022, "English", "Journal"),
+        new("UI Fixture 03 - OCR Only",
+            "A control abstract about a scanned conservation record.",
+            null,
+            "This scanned UI test page contains the distinctive ocronlyjade marker and no matching catalog metadata.",
+            2020, "English", "Journal"),
+        new("UI Fixture 04 - Abstract and OCR",
+            "The abstract contains dualfieldquartz, which also appears on the scanned page.",
+            null,
+            "Scanned page marker dualfieldquartz. This term is repeated in the abstract for snippet comparison.",
+            2023, "English", "Journal"),
+        new("UI Fixture 05 - Abstract Ranking Match",
+            "The abstract contains rankingsapphire so abstract and OCR result ranking can be compared.",
+            null, null, 2024, "English", "Journal"),
+        new("UI Fixture 06 - OCR Ranking Match",
+            "A control abstract for the lower-priority OCR ranking comparison.",
+            null,
+            "Scanned page marker rankingsapphire. This fixture should rank below the abstract match.",
+            2024, "English", "Journal"),
+        new("UI Fixture 07 - Title Only titleonlycoral",
+            "A control abstract without the title-only search marker.",
+            null, null, 2019, "English", "Journal"),
+        new("UI Fixture 08 - Keyword Only",
+            "A control abstract without the keyword-only search marker.",
+            null, null, 2021, "English", "Journal", ExtraKeyword: "keywordonlycedar"),
+        new("UI Fixture 09 - Author Only",
+            "A control abstract for checking author-field matches.",
+            null, null, 2022, "English", "Journal", AuthorOnly: true),
+        new("UI Fixture 10 - Filter Match",
+            "The abstract contains filteronlycopper for testing year, language, and type filters.",
+            null, null, 2020, "French", "Report")
+    ];
+
     public async Task SeedAsync()
     {
         if (await context.Publications.AnyAsync())
         {
-            logger.LogInformation("Seed skipped — data already exists.");
-            return;
+            logger.LogInformation("Base seed skipped — data already exists.");
+        }
+        else
+        {
+            Randomizer.Seed = new Random(Seed);
+
+            var authors = GenerateAuthors(50);
+            var keywords = GenerateKeywords(100);
+            var languages = GenerateLanguages(LanguagePool.Length);
+            var publicationTypes = GeneratePublicationTypes(PublicationTypePool.Length);
+            var publications = GeneratePublications(150, authors, keywords, languages, publicationTypes);
+
+            await GeneratePdfFilesAsync(publications);
+
+            context.Authors.AddRange(authors);
+            context.Keywords.AddRange(keywords);
+            context.Languages.AddRange(languages);
+            context.PublicationTypes.AddRange(publicationTypes);
+            context.Publications.AddRange(publications);
+
+            await context.SaveChangesAsync();
+            logger.LogInformation(
+                "Seeded {Authors} authors, {Keywords} keywords, {Languages} languages, {PublicationTypes} publication types, {Publications} publications.",
+                authors.Count, keywords.Count, languages.Count, publicationTypes.Count, publications.Count);
         }
 
-        Randomizer.Seed = new Random(Seed);
+        await SeedUiSearchFixturesAsync();
+    }
 
-        var authors = GenerateAuthors(50);
-        var keywords = GenerateKeywords(100);
-        var languages = GenerateLanguages(LanguagePool.Length);
-        var publicationTypes = GeneratePublicationTypes(PublicationTypePool.Length);
-        var publications = GeneratePublications(150, authors, keywords, languages, publicationTypes);
+    private async Task SeedUiSearchFixturesAsync()
+    {
+        var existingTitles = await context.Publications
+            .Where(publication => publication.Title.StartsWith(UiFixtureTitlePrefix))
+            .Select(publication => publication.Title)
+            .ToHashSetAsync();
+        var missing = UiSearchFixtures.Where(fixture => !existingTitles.Contains(fixture.Title)).ToList();
+        if (missing.Count == 0)
+            return;
 
-        await GeneratePdfFilesAsync(publications);
+        var defaultAuthor = await GetOrCreateAuthorAsync("UI Fixture", "Author");
+        var authorOnly = await GetOrCreateAuthorAsync("Fixture", "AuthorOnlyLapis");
+        var fixtureKeyword = await GetOrCreateKeywordAsync(UiFixtureKeyword);
+        foreach (var fixture in missing)
+        {
+            var language = await GetOrCreateLanguageAsync(fixture.Language);
+            var publicationType = await GetOrCreatePublicationTypeAsync(fixture.PublicationType);
+            var keywords = new List<Keyword> { fixtureKeyword };
+            if (fixture.ExtraKeyword is not null)
+                keywords.Add(await GetOrCreateKeywordAsync(fixture.ExtraKeyword));
 
-        context.Authors.AddRange(authors);
-        context.Keywords.AddRange(keywords);
-        context.Languages.AddRange(languages);
-        context.PublicationTypes.AddRange(publicationTypes);
-        context.Publications.AddRange(publications);
+            var publication = new Publication
+            {
+                Title = fixture.Title,
+                Abstract = fixture.Abstract,
+                Body = fixture.Body,
+                Year = fixture.Year,
+                Authors = [fixture.AuthorOnly ? authorOnly : defaultAuthor],
+                Keywords = keywords,
+                Languages = [language],
+                PublicationTypes = [publicationType],
+                CreatedAt = FixedTimestamp,
+                LastModified = FixedTimestamp
+            };
+
+            if (fixture.PdfBody is not null)
+            {
+                var seedPdf = SeedPdfGenerator.Generate(fixture.PdfBody);
+                using var stream = new MemoryStream(seedPdf.PdfBytes, writable: false);
+                var safeFileName = SanitizeFileName(fixture.FileName);
+                publication.PdfFileName = await fileService.SavePdfAsync(stream, safeFileName);
+            }
+
+            context.Publications.Add(publication);
+        }
 
         await context.SaveChangesAsync();
-        logger.LogInformation(
-            "Seeded {Authors} authors, {Keywords} keywords, {Languages} languages, {PublicationTypes} publication types, {Publications} publications.",
-            authors.Count, keywords.Count, languages.Count, publicationTypes.Count, publications.Count);
+        logger.LogInformation("Seeded {Count} focused UI search fixtures.", missing.Count);
+    }
+
+    private async Task<Author> GetOrCreateAuthorAsync(string firstName, string lastName)
+    {
+        var local = context.Authors.Local.FirstOrDefault(author =>
+            author.FirstName == firstName && author.LastName == lastName);
+        if (local is not null)
+            return local;
+
+        var existing = await context.Authors.FirstOrDefaultAsync(author =>
+            author.FirstName == firstName && author.LastName == lastName);
+        if (existing is not null)
+            return existing;
+
+        var author = new Author
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            CreatedAt = FixedTimestamp,
+            LastModified = FixedTimestamp
+        };
+        context.Authors.Add(author);
+        return author;
+    }
+
+    private async Task<Keyword> GetOrCreateKeywordAsync(string value)
+    {
+        var local = context.Keywords.Local.FirstOrDefault(keyword => keyword.Value == value);
+        if (local is not null)
+            return local;
+
+        var existing = await context.Keywords.FirstOrDefaultAsync(keyword => keyword.Value == value);
+        if (existing is not null)
+            return existing;
+
+        var keyword = new Keyword { Value = value, CreatedAt = FixedTimestamp, LastModified = FixedTimestamp };
+        context.Keywords.Add(keyword);
+        return keyword;
+    }
+
+    private async Task<Language> GetOrCreateLanguageAsync(string value)
+    {
+        var local = context.Languages.Local.FirstOrDefault(language => language.Value == value);
+        if (local is not null)
+            return local;
+
+        var existing = await context.Languages.FirstOrDefaultAsync(language => language.Value == value);
+        if (existing is not null)
+            return existing;
+
+        var language = new Language { Value = value, CreatedAt = FixedTimestamp, LastModified = FixedTimestamp };
+        context.Languages.Add(language);
+        return language;
+    }
+
+    private async Task<PublicationType> GetOrCreatePublicationTypeAsync(string value)
+    {
+        var local = context.PublicationTypes.Local.FirstOrDefault(type => type.Value == value);
+        if (local is not null)
+            return local;
+
+        var existing = await context.PublicationTypes.FirstOrDefaultAsync(type => type.Value == value);
+        if (existing is not null)
+            return existing;
+
+        var type = new PublicationType { Value = value, CreatedAt = FixedTimestamp, LastModified = FixedTimestamp };
+        context.PublicationTypes.Add(type);
+        return type;
     }
 
     private List<Author> GenerateAuthors(int count)
@@ -378,4 +542,18 @@ public class DbSeeder(AppDbCntx context, IFileService fileService, ILogger<DbSee
 
     private static int WordCount(string text) =>
         text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+
+    private sealed record UiSearchFixture(
+        string Title,
+        string Abstract,
+        string? Body,
+        string? PdfBody,
+        int Year,
+        string Language,
+        string PublicationType,
+        string? ExtraKeyword = null,
+        bool AuthorOnly = false)
+    {
+        public string FileName => Title.Replace("UI Fixture ", "ui-test-fixture-") + ".pdf";
+    }
 }
